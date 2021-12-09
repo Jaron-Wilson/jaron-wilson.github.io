@@ -1,1 +1,1 @@
-https://jaron-wilson.github.io/Minecraft/
+https://jaron-wilson.github.io/
