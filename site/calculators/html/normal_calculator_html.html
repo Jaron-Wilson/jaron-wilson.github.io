@@ -28,13 +28,23 @@
         <span class="num" onclick="document.calc.txt.value += '.'">.</span>
         <span class="num equal" onclick="document.calc.txt.value = eval(calc.txt.value)">=</span>
     </form>
-	    <button class="js-enable c-button">Re-enable</button>
-	    <button class="js-destroy c-button">Destroy</button>
+	    <button id="enable-button">Re-enable</button>
+	    <button id="destory-button">Destroy</button>
 	    
     </div>
     
     <script type="text/javascript" src="../js/vanilla-tilt.js"></script>
     <script type="text/javascript">
+	    let destroyBox = document.querySelector("#destroy-box");
+VanillaTilt.init(destroyBox);
+
+document.querySelector("#destroy-button").addEventListener("click", function () {
+    destroyBox.vanillaTilt.destroy();
+});
+
+document.querySelector("#enable-button").addEventListener("click", function () {
+    VanillaTilt.init(destroyBox);
+});
 	VanillaTilt.init(document.querySelector(".container"), {
 		max: 15,
 		speed: 400,
