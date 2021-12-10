@@ -35,7 +35,15 @@
     
     <script type="text/javascript" src="../js/vanilla-tilt.js"></script>
     <script type="text/javascript">
-	    let destroyBox = document.querySelector("#destroy-box");
+	VanillaTilt.init(document.querySelector(".container"), {
+		max: 15,
+		speed: 400,
+        glare: false,
+        "max-glare": 0.2,
+	});
+    </script>    
+	<script type="text/javascript">
+		let destroyBox = document.querySelector("#destroy-box");
 VanillaTilt.init(destroyBox);
 
 document.querySelector("#destroy-button").addEventListener("click", function () {
@@ -45,12 +53,6 @@ document.querySelector("#destroy-button").addEventListener("click", function () 
 document.querySelector("#enable-button").addEventListener("click", function () {
     VanillaTilt.init(destroyBox);
 });
-	VanillaTilt.init(document.querySelector(".container"), {
-		max: 15,
-		speed: 400,
-        glare: false,
-        "max-glare": 0.2,
-	});
-    </script>    
+	</script>
 </body>
 </html>
