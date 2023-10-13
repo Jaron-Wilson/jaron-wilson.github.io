@@ -4,12 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js"></script>
 </head>
 <body>
-    <p><a href="./404/">404 Page</a></p>
-    <p><a href="./fake_hacking_program/">Fake Hacking Computer</a></p>
-    <p><a href="hack_game/" > Hack Game</a></p>
-    <p><a href="windows_computer/">fake computer</a></p>
+<!-- Canvas -->
+<canvas class="orb-canvas"></canvas>
+<!-- Overlay -->
+<div class="overlay">
+  <!-- Overlay inner wrapper -->
+  <div class="overlay__inner">
+    <!-- Title -->
+    <h1 class="overlay__title">
+      <span class="text-gradient">generative</span>
+    </h1>
+    <!-- Description -->
+    <p class="overlay__description">
+        <p><a href="./404/">404 Page</a></p>
+        <p><a href="./fake_hacking_program/">Fake Hacking Computer</a></p>
+        <p><a href="hack_game/" > Hack Game</a></p>
+        <p><a href="windows_computer/">fake computer</a></p>
+    </p>
+    <!-- Buttons -->
+    <div class="overlay__btns">
+
+      <button class="overlay__btn overlay__btn--colors">
+        <span>Randomise Colors</span>
+      </button>
+    </div>
+  </div>
+</div>
     
 </body>
 </html>
