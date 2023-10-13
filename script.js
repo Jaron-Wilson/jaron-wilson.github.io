@@ -226,3 +226,20 @@ document
       orb.fill = colorPalette.randomColor();
     });
   });
+
+  document.getElementById('button1').addEventListener('click', function() {
+    window.location.href = './404'; // Replace with your desired URL
+  });
+  
+  document.getElementById('button2').addEventListener('click', function() {
+    window.location.href = './fake_hacking_program/'; // Replace with your desired URL
+  });
+  
+  document.getElementById('button3').addEventListener('click', function() {
+    window.location.href = 'hack_game/'; // Replace with your desired URL
+  });
+  
+  document.getElementById('button4').addEventListener('click', function() {
+    window.location.href = 'windows_computer/'; // Replace with your desired URL
+  });
+  
