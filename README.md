@@ -1,5 +1,5 @@
 git add <files>
 git commit -m Commit message
-git push
+git push -u origin main
 
 
