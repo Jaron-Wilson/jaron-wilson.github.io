@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.7.1 Pokémon Card Test Result Visualizer</title>
+    <title>v1.7.2 Pokémon Card Test Result Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -429,7 +429,7 @@
                 const isUnexpected = unexpectedIds && unexpectedIds.has(card.id);
                 const isExpected = expectedIds && expectedIds.has(card.id);
 
-                // --- UPDATED: Check for BOTH first ---
+                // Check for BOTH first, then unexpected, then expected
                 if (isUnexpected && isExpected) {
                     // Apply a distinct style for cards in BOTH lists (e.g., light violet)
                     liClasses = 'bg-violet-100 rounded px-2'; // Use violet-100
@@ -440,7 +440,6 @@
                     // Apply light blue highlight if only expected
                     liClasses = 'bg-blue-100 rounded px-2';
                 }
-                // --------------------------------------
 
                 // Build the inner HTML for the card details based on toggles
                 let cardDetails = `<span class="card-detail card-id">${card.id || '&lt;no id&gt;'}</span>`;
@@ -520,10 +519,10 @@
                  // Generate HTML for the detailed card lists if expanded
                  const detailsHTML = isExpanded ? `
                      <div class="mt-2 ml-6 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                         ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')} {/* No highlight sets passed */}
-                         ${generateCardListHTML(testCase.unexpectedCards, 'Unexpected Cards', 'border-orange-400')} {/* No highlight sets passed */}
+                         ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')}
+                         ${generateCardListHTML(testCase.unexpectedCards, 'Unexpected Cards', 'border-orange-400')}
                          ${failureReason}
-                         ${apiResponseListHTML} {/* Insert API response list */}
+                         ${apiResponseListHTML}
                      </div>
                  ` : '';
 
@@ -643,3 +642,4 @@
 
 </body>
 </html>
+
