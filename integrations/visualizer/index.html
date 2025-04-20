@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Card Test Result Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Optional: Add custom styles if needed */
+        body {
+            background-color: #f1f5f9; /* slate-100 */
+            font-family: sans-serif;
+        }
+        /* Style for chart containers to prevent layout shifts */
+        .chart-container {
+            position: relative;
+            height: 250px; /* Adjust height as needed */
+            width: 100%;
+        }
+        .summary-stats p {
+             margin-bottom: 0.25rem;
+        }
+         .summary-stats .value {
+             font-size: 1.5rem; /* text-2xl */
+             font-weight: 700; /* font-bold */
+         }
+         .summary-stats .label {
+             font-size: 0.875rem; /* text-sm */
+             font-weight: 500; /* font-medium */
+             color: #4b5563; /* text-gray-600 */
+         }
+
+         /* Icon styling */
+         .icon {
+            display: inline-block;
+            width: 1.25em; /* size-20 in lucide roughly maps here */
+            height: 1.25em;
+            stroke-width: 2;
+            vertical-align: middle;
+         }
+        .icon-sm {
+            width: 1em;
+            height: 1em;
+        }
+
+        /* Custom styles for dynamic elements */
+        .test-case-header {
+            cursor: pointer;
+        }
+
+         .card-list {
+            border-left-width: 4px;
+            padding-left: 0.5rem; /* pl-2 */
+            margin-top: 0.5rem;
+         }
+         .card-list h4 {
+            font-weight: 500; /* font-medium */
+            color: #374151; /* text-gray-700 */
+         }
+         .card-list ul {
+            margin-left: 0.5rem; /* ml-2 */
+         }
+         .card-list li {
+            font-size: 0.875rem; /* text-sm */
+            padding-top: 0.25rem; /* py-1 */
+            padding-bottom: 0.25rem;
+         }
+         .card-list .card-id {
+            font-family: monospace; /* font-mono */
+            color: #6b7280; /* text-gray-500 */
+         }
+
+         .badge {
+            font-size: 0.75rem; /* text-xs */
+            padding: 0.25rem 0.5rem; /* py-1 px-2 */
+            border-radius: 9999px; /* rounded-full */
+            margin-left: 0.5rem; /* ml-2 */
+            display: inline-block;
+         }
+
+         .failure-reason {
+            background-color: #fee2e2; /* bg-red-50 */
+            padding: 0.5rem; /* p-2 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-top: 0.5rem; /* mt-2 */
+            color: #b91c1c; /* text-red-700 */
+            font-size: 0.875rem; /* text-sm */
+         }
+
+    </style>
+</head>
+<body>
+
+    <div class="max-w-6xl mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Pokémon Card Test Result Visualizer</h1>
+
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-blue-500 icon"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+                <h2 class="text-lg font-semibold">Input Log Data</h2>
+            </div>
+
+            <textarea
+                id="logInput"
+                class="w-full h-32 p-2 border border-gray-300 rounded-md font-mono text-sm"
+                placeholder="Paste your test log data here..."
+            ></textarea>
+
+            <div class="flex justify-between items-center mt-2">
+                <p id="errorMessage" class="text-red-500 text-sm"></p>
+                <button
+                    id="parseButton"
+                    class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md ml-auto"
+                >
+                    Parse Log Data
+                </button>
+            </div>
+        </div>
+
+        <div id="resultsContainer">
+            <div id="summaryChartsContainer" class="flex flex-col md:flex-row items-start justify-center gap-8 mb-8">
+                 <div id="pieChartContainerWrapper" class="bg-white p-4 rounded-lg shadow-md w-full md:w-1/2"></div>
+                 <div id="barChartContainerWrapper" class="bg-white p-4 rounded-lg shadow-md w-full md:w-1/2"></div>
+             </div>
+
+             <div id="testCasesContainer" class="bg-white p-4 rounded-lg shadow-md">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration and State ---
+        const COLORS = {
+            passed: '#4ade80', // green-400
+            failed: '#f87171', // red-400
+            expectedFail: '#fbbf24', // amber-400
+            sv1: '#60a5fa', // blue-400
+            sv3pt5: '#c084fc', // purple-400
+            sv5: '#fcd34d', // yellow-400 (Adjusted for better visibility)
+            sv8: '#f97316', // orange-500
+            default: '#94a3b8', // slate-400
+        };
+
+        // Global state replacement
+        let testData = null;
+        let expandedTestCase = null;
+        let pieChartInstance = null;
+        let barChartInstance = null;
+
+        // --- DOM References ---
+        const logInput = document.getElementById('logInput');
+        const parseButton = document.getElementById('parseButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const summaryChartsContainer = document.getElementById('summaryChartsContainer');
+        const pieChartContainerWrapper = document.getElementById('pieChartContainerWrapper');
+        const barChartContainerWrapper = document.getElementById('barChartContainerWrapper');
+        const testCasesContainer = document.getElementById('testCasesContainer');
+
+
+        // --- Lucide Icons (Inline SVG) ---
+        const ICONS = {
+            Check: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon text-green-500 mr-2"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+            XFailExpected: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon text-amber-500 mr-2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+            XFailUnexpected: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon text-red-500 mr-2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+            ChevronDown: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-sm"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
+            ChevronUp: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-sm"><polyline points="18 15 12 9 6 15"></polyline></svg>`
+        };
+
+
+        // --- Parsing Logic (Copied from React component) ---
+        const parseTestResults = (text) => {
+            const testResultLines = text.split('\n').filter(line =>
+                line.includes('Results: TestResult')
+            );
+
+            const testResults = testResultLines.map(line => {
+                const passedMatch = line.match(/passed=(true|false)/);
+                const passed = passedMatch ? passedMatch[1] === 'true' : null;
+
+                const messageMatch = line.match(/message=\[([^\]]+)\]/);
+                const message = messageMatch ? messageMatch[1] : null;
+
+                const supposedToFailMatch = line.match(/supposedToFail=(true|false)/);
+                const supposedToFail = supposedToFailMatch ? supposedToFailMatch[1] === 'true' : false;
+
+                const checkType = message ? (message.includes('Expected Check') ? 'Expected Check' : 'Unexpected Check') : null;
+
+                const expectedMatch = line.match(/Expected: \[([^\]]*)\]/);
+                const expectedCardsStr = expectedMatch ? expectedMatch[1] : '';
+
+                const unexpectedMatch = line.match(/Unexpected: \[([^\]]*)\]/);
+                const unexpectedCardsStr = unexpectedMatch ? unexpectedMatch[1] : '';
+
+                const parseCards = (cardsStr) => {
+                    if (!cardsStr) return [];
+                    return cardsStr.split('), ')
+                        .map(cardStr => {
+                            const cleanCardStr = cardStr.endsWith(')') ? cardStr : cardStr + ')';
+                            const idMatch = cleanCardStr.match(/id=([^,]+)/);
+                            const nameMatch = cleanCardStr.match(/name=([^)]+)/);
+                            return {
+                                id: idMatch ? idMatch[1] : null,
+                                name: nameMatch ? (nameMatch[1] === 'null' ? null : nameMatch[1]) : null
+                            };
+                        }).filter(card => card.id || card.name); // Ensure valid card objects
+                };
+
+                const expectedCards = parseCards(expectedCardsStr);
+                const unexpectedCards = parseCards(unexpectedCardsStr);
+
+                const categoriesMatch = line.match(/testCategories=\[([^\]]*)\]/);
+                const categoriesStr = categoriesMatch ? categoriesMatch[1] : '';
+                const categories = categoriesStr && categoriesStr !== 'null' && categoriesStr.trim() !== '' ?
+                    categoriesStr.split(', ') : [];
+
+                return {
+                    passed, checkType, message, expectedCards, unexpectedCards, categories, supposedToFail,
+                    timestamp: line.split(' ')[0], raw: line
+                };
+            });
+
+            const testCases = [];
+            for (let i = 0; i < testResults.length; i += 2) {
+                if (i + 1 < testResults.length) {
+                    const r1 = testResults[i];
+                    const r2 = testResults[i+1];
+                    // Basic check to see if they likely belong together (e.g., based on timestamp proximity or message content)
+                    // This simple pairing might need refinement based on actual log structure if logs can be interleaved.
+                     if (r1.checkType && r2.checkType && r1.checkType !== r2.checkType) {
+                        const supposedToFail = r1.supposedToFail || r2.supposedToFail;
+                         testCases.push({
+                            unexpectedCheck: r1.checkType === 'Unexpected Check' ? r1 : r2,
+                            expectedCheck: r1.checkType === 'Expected Check' ? r1 : r2,
+                            categories: r1.categories.length > 0 ? r1.categories : (r2.categories.length > 0 ? r2.categories : []),
+                            passed: r1.passed && r2.passed,
+                            supposedToFail: supposedToFail
+                         });
+                    } else {
+                        // Handle cases where pairs aren't found correctly, maybe log a warning
+                        console.warn("Could not reliably pair test results at index", i);
+                    }
+                }
+            }
+
+            testCases.forEach((testCase, index) => {
+                 testCase.id = index + 1;
+                 testCase.expectedCards = testCase.expectedCheck.expectedCards;
+                 testCase.unexpectedCards = testCase.unexpectedCheck.unexpectedCards;
+
+                 const cardSeries = new Set();
+                 [...testCase.expectedCards, ...testCase.unexpectedCards].forEach(card => {
+                    if (card.id) {
+                        const series = card.id.split('-')[0];
+                        cardSeries.add(series);
+                    }
+                 });
+                 testCase.cardSeries = [...cardSeries];
+
+                 // Simple duplicate check (can be improved for performance if needed)
+                testCase.isDuplicate = testCases.slice(0, index).some(tc =>
+                    JSON.stringify(tc.expectedCards) === JSON.stringify(testCase.expectedCards) &&
+                    JSON.stringify(tc.unexpectedCards) === JSON.stringify(testCase.unexpectedCards)
+                );
+            });
+
+             const uniqueTestCases = testCases.filter(tc => !tc.isDuplicate);
+
+            const passedTests = uniqueTestCases.filter(tc => tc.passed).length;
+            const failedTests = uniqueTestCases.length - passedTests;
+            const expectedFailedTests = uniqueTestCases.filter(tc => !tc.passed && tc.supposedToFail).length;
+            const unexpectedFailedTests = failedTests - expectedFailedTests;
+
+            const allCardSeries = new Set();
+            uniqueTestCases.forEach(tc => tc.cardSeries.forEach(series => allCardSeries.add(series)));
+
+            const failureAnalysis = uniqueTestCases
+                .filter(tc => !tc.passed)
+                .map(tc => {
+                    let failureReason;
+                    if (!tc.unexpectedCheck.passed && tc.expectedCheck.passed) {
+                        failureReason = "Unexpected cards present";
+                    } else if (tc.unexpectedCheck.passed && !tc.expectedCheck.passed) {
+                        failureReason = "Expected cards missing";
+                    } else if (!tc.unexpectedCheck.passed && !tc.expectedCheck.passed) {
+                        failureReason = "Both expected missing and unexpected present";
+                    } else {
+                         failureReason = "Unknown failure state"; // Should not happen if tc.passed is false
+                    }
+                    return { testCaseId: tc.id, failureReason };
+                });
+
+            return {
+                summary: {
+                    totalTests: uniqueTestCases.length, passedTests, failedTests,
+                    expectedFailedTests, unexpectedFailedTests, cardSeries: [...allCardSeries]
+                },
+                testCases: uniqueTestCases,
+                failures: failureAnalysis // Store only reason keyed by ID for simplicity
+            };
+        };
+
+
+        // --- Rendering Functions ---
+
+        function renderSummaryCharts() {
+            if (!testData || !testData.summary) {
+                summaryChartsContainer.innerHTML = ''; // Clear previous
+                return;
+            }
+
+            const { totalTests, passedTests, expectedFailedTests, unexpectedFailedTests } = testData.summary;
+
+            // --- Pie Chart ---
+            pieChartContainerWrapper.innerHTML = `
+                <h3 class="text-xl font-bold mb-4">Test Results Summary</h3>
+                <div class="chart-container mb-4">
+                    <canvas id="pieChartCanvas"></canvas>
+                </div>
+                <div class="flex justify-around mt-4 summary-stats">
+                    <div class="text-center">
+                        <p class="label">Total Tests</p>
+                        <p class="value">${totalTests}</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="label text-green-600">Passed</p>
+                        <p class="value text-green-600">${passedTests}</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="label text-amber-500">Expected Fails</p>
+                        <p class="value text-amber-500">${expectedFailedTests}</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="label text-red-500">Unexpected Fails</p>
+                        <p class="value text-red-500">${unexpectedFailedTests}</p>
+                    </div>
+                </div>
+            `;
+
+            const pieCtx = document.getElementById('pieChartCanvas').getContext('2d');
+            const pieChartData = {
+                labels: ['Passed', 'Expected Failures', 'Unexpected Failures'],
+                datasets: [{
+                    label: 'Test Results',
+                    data: [passedTests, expectedFailedTests, unexpectedFailedTests],
+                    backgroundColor: [COLORS.passed, COLORS.expectedFail, COLORS.failed],
+                    hoverOffset: 4
+                }]
+            };
+
+            // Destroy previous chart instance if it exists
+            if (pieChartInstance) {
+                pieChartInstance.destroy();
+            }
+
+            pieChartInstance = new Chart(pieCtx, {
+                type: 'pie',
+                data: pieChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + ' tests';
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        title: { // Added title plugin configuration
+                             display: false // Keep the h3 heading instead
+                        }
+                    }
+                }
+            });
+
+
+            // --- Bar Chart ---
+            const seriesCounts = {};
+            testData.testCases.forEach(tc => {
+                tc.cardSeries.forEach(series => {
+                    seriesCounts[series] = (seriesCounts[series] || 0) + 1;
+                });
+            });
+
+            const seriesLabels = Object.keys(seriesCounts);
+            const seriesDataValues = seriesLabels.map(series => seriesCounts[series]);
+            const seriesColors = seriesLabels.map(series => COLORS[series] || COLORS.default);
+
+            barChartContainerWrapper.innerHTML = `
+                 <h3 class="text-xl font-bold mb-4">Card Series Distribution</h3>
+                 <div class="chart-container">
+                    <canvas id="barChartCanvas"></canvas>
+                 </div>
+             `;
+            const barCtx = document.getElementById('barChartCanvas').getContext('2d');
+            const barChartData = {
+                labels: seriesLabels,
+                datasets: [{
+                    label: 'Test Cases',
+                    data: seriesDataValues,
+                    backgroundColor: seriesColors,
+                    borderColor: seriesColors.map(color => color.replace(')', ', 0.8)').replace('rgb', 'rgba')), // Add slight border
+                    borderWidth: 1
+                }]
+            };
+
+             // Destroy previous chart instance if it exists
+             if (barChartInstance) {
+                 barChartInstance.destroy();
+             }
+
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: barChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // Hide legend if only one dataset
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.parsed.y} tests`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1 // Ensure integer ticks for counts
+                            }
+                        }
+                    }
+                }
+            });
+             summaryChartsContainer.style.display = 'flex'; // Ensure container is visible
+        }
+
+        function generateCardListHTML(cards, title, borderColorClass) {
+            if (!cards || cards.length === 0) return '';
+            const listItems = cards.map((card, idx) => `
+                <li key="${idx}">
+                    <span class="card-id">${card.id || '&lt;no id&gt;'}</span>: ${card.name || '&lt;null&gt;'}
+                </li>
+            `).join('');
+
+            return `
+                <div class="card-list ${borderColorClass}">
+                    <h4>${title} (${cards.length})</h4>
+                    <ul>${listItems}</ul>
+                </div>
+            `;
+        }
+
+
+        function renderTestCases() {
+            if (!testData || !testData.testCases) {
+                 testCasesContainer.innerHTML = '<h3 class="text-xl font-bold mb-4">Test Cases</h3><p>No test cases found or parsed.</p>';
+                 return;
+            }
+
+            let testCasesHTML = '<h3 class="text-xl font-bold mb-4">Test Cases</h3>';
+
+            testData.testCases.forEach((testCase) => {
+                const isExpanded = expandedTestCase === testCase.id;
+                const statusIcon = testCase.passed ? ICONS.Check : (testCase.supposedToFail ? ICONS.XFailExpected : ICONS.XFailUnexpected);
+                const expandIcon = isExpanded ? ICONS.ChevronUp : ICONS.ChevronDown;
+
+                const seriesIndicators = testCase.cardSeries.map(series => `
+                    <span
+                        class="ml-1 inline-block w-4 h-4 rounded-full"
+                        style="background-color: ${COLORS[series] || COLORS.default};"
+                        title="Card Series: ${series}"
+                    ></span>
+                `).join('');
+
+                const expectedFailBadge = (!testCase.passed && testCase.supposedToFail) ? `
+                    <span class="badge bg-amber-100 text-amber-800">Expected to Fail</span>
+                ` : '';
+
+                const categoryBadge = testCase.categories.length > 0 ? `
+                    <span class="badge bg-gray-100 text-gray-600">${testCase.categories.join(', ')}</span>
+                ` : '';
+
+                const failureReason = (!testCase.passed && isExpanded) ? `
+                     <div class="col-span-1 md:col-span-2 failure-reason">
+                         <p><strong>Failure Reason:</strong> ${testData.failures.find(f => f.testCaseId === testCase.id)?.failureReason || 'Unknown'}</p>
+                     </div>
+                 ` : '';
+
+                const detailsHTML = isExpanded ? `
+                    <div class="mt-2 ml-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')}
+                        ${generateCardListHTML(testCase.unexpectedCards, 'Unexpected Cards', 'border-orange-400')}
+                        ${failureReason}
+                    </div>
+                ` : '';
+
+                testCasesHTML += `
+                    <div class="border-b border-gray-200 py-2 last:border-b-0">
+                        <div
+                            class="flex items-center justify-between test-case-header"
+                            data-id="${testCase.id}"
+                        >
+                            <div class="flex items-center">
+                                ${statusIcon}
+                                <span class="font-medium">Test Case #${testCase.id}</span>
+                                ${expectedFailBadge}
+                                ${categoryBadge}
+                            </div>
+                            <div class="flex items-center">
+                                <div class="flex mr-2">${seriesIndicators}</div>
+                                ${expandIcon}
+                            </div>
+                        </div>
+                        <div class="test-case-details">${detailsHTML}</div>
+                    </div>
+                `;
+            });
+
+            testCasesContainer.innerHTML = testCasesHTML;
+             testCasesContainer.style.display = 'block'; // Ensure container is visible
+        }
+
+
+        // --- Event Handlers ---
+        function handleParse() {
+            const text = logInput.value;
+            errorMessage.textContent = ''; // Clear previous errors
+            testData = null; // Reset data
+            expandedTestCase = null; // Reset expansion
+             summaryChartsContainer.style.display = 'none'; // Hide results while parsing
+             testCasesContainer.style.display = 'none';
+
+
+            if (!text.trim()) {
+                errorMessage.textContent = "Please paste the log data first";
+                return;
+            }
+
+            try {
+                testData = parseTestResults(text);
+                // Initial render after parsing
+                renderSummaryCharts();
+                renderTestCases();
+            } catch (err) {
+                errorMessage.textContent = `Error parsing data: ${err.message}`;
+                console.error(err);
+                 // Optionally clear results display on error
+                 summaryChartsContainer.innerHTML = '';
+                 testCasesContainer.innerHTML = '';
+            }
+        }
+
+        function handleExpandToggle(event) {
+             // Use event delegation - check if the click was on a header or its child
+             const header = event.target.closest('.test-case-header');
+             if (!header) return; // Click was not inside a header
+
+             const id = parseInt(header.getAttribute('data-id'), 10);
+             if (isNaN(id)) return;
+
+             if (expandedTestCase === id) {
+                 expandedTestCase = null; // Collapse
+             } else {
+                 expandedTestCase = id; // Expand
+             }
+             renderTestCases(); // Re-render the list to show/hide details
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            parseButton.addEventListener('click', handleParse);
+            // Add event listener to the container for delegation
+            testCasesContainer.addEventListener('click', handleExpandToggle);
+
+             // Hide results initially
+             summaryChartsContainer.style.display = 'none';
+             testCasesContainer.style.display = 'none';
+        });
+
+    </script>
+
+</body>
+</html>
