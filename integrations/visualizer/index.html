@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.6.2 Pokémon Card Test Result Visualizer</title>
+    <title>v1.7 Pokémon Card Test Result Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -32,7 +32,16 @@
         .card-list { border-left-width: 4px; padding-left: 0.75rem; /* pl-3 */ margin-top: 0.5rem; }
         .card-list h4 { font-weight: 600; /* font-semibold */ color: #374151; /* text-gray-700 */ margin-bottom: 0.25rem;}
         .card-list ul { margin-left: 0; list-style: none; padding-left: 0;}
-        .card-list li { font-size: 0.875rem; /* text-sm */ padding-top: 0.35rem; padding-bottom: 0.35rem; line-height: 1.4;}
+        .card-list li {
+            font-size: 0.875rem; /* text-sm */
+            padding-top: 0.35rem; padding-bottom: 0.35rem; line-height: 1.4;
+            /* Add padding for highlights */
+            padding-left: 0.5rem; padding-right: 0.5rem; /* px-2 */
+            margin-bottom: 0.1rem; /* Slight space between items */
+        }
+        /* Highlight styles - Using Tailwind classes directly now for blue, keeping CSS for orange */
+        .highlight-unexpected { background-color: #ffedd5; /* orange-100 */ border-radius: 0.25rem; /* rounded */ }
+
         .card-list .card-detail { margin-right: 0.4em; /* Spacing between details */ }
         .card-list .card-id { font-weight: 600; /* font-semibold */ color: #374151;}
         .card-list .card-name {}
@@ -343,10 +352,14 @@
         }
 
         /**
-         * Generates the HTML for a list of cards, respecting display toggles.
+         * Generates the HTML for a list of cards, respecting display toggles
+         * and applying highlights based on provided ID sets (used for API Response list).
          */
-        function generateCardListHTML(cards, title, borderColorClass) {
+        function generateCardListHTML(cards, title, borderColorClass, expectedIds = null, unexpectedIds = null) {
+            // Return empty string if no cards
             if (!cards || cards.length === 0) return '';
+
+            // Get current toggle states
             const showName = document.getElementById('toggleName').checked;
             const showSetName = document.getElementById('toggleSetName').checked;
             const showSetNumber = document.getElementById('toggleSetNumber').checked;
@@ -354,7 +367,20 @@
             const showPrice = document.getElementById('togglePrice').checked;
             const showHash = document.getElementById('toggleHash').checked;
 
+            // Generate list items for each card
             const listItems = cards.map((card) => {
+                // Determine highlight class based on provided ID sets
+                // Prioritize unexpected highlight over expected
+                let liClasses = 'px-2'; // Base padding
+                if (unexpectedIds && unexpectedIds.has(card.id)) {
+                    // Use custom CSS class for orange highlight
+                    liClasses = 'highlight-unexpected px-2';
+                } else if (expectedIds && expectedIds.has(card.id)) {
+                    // Use Tailwind class directly for light blue highlight
+                    liClasses = 'bg-blue-100 rounded px-2'; // Light blue highlight
+                }
+
+                // Build the inner HTML for the card details based on toggles
                 let cardDetails = `<span class="card-detail card-id">${card.id || '&lt;no id&gt;'}</span>`;
                 if (showName && card.name) cardDetails += `: <span class="card-detail card-name">${card.name}</span>`;
                 if (showSetName && card.setName) cardDetails += `<span class="card-detail card-set-name"> (${card.setName})</span>`;
@@ -362,15 +388,19 @@
                 if (showSetAbbr && card.setAbbreviation) cardDetails += `<span class="card-detail card-set-abbr"> [${card.setAbbreviation}]</span>`;
                 if (showPrice && card.price) cardDetails += `<span class="card-detail card-price"> ${card.price}</span>`;
                 if (showHash && card.playTextHash) cardDetails += `<span class="card-detail card-hash">Hash: ${card.playTextHash}</span>`;
-                return `<li>${cardDetails}</li>`;
-            }).join('');
 
+                // Return the list item with appropriate classes and details
+                return `<li class="${liClasses}">${cardDetails}</li>`;
+            }).join(''); // Join all list items into a single string
+
+            // Return the full list HTML structure
             return `
                 <div class="card-list ${borderColorClass}">
                     <h4>${title} (${cards.length})</h4>
                     <ul>${listItems}</ul>
                 </div>`;
         }
+
 
         /**
          * Renders the list of test cases.
@@ -395,11 +425,25 @@
                  const failureReason = (!testCase.passed && isExpanded) ?
                      `<div class="col-span-1 md:col-span-2 failure-reason"><p><strong>Failure Reason:</strong> ${testData.failures.find(f => f.testCaseId === testCase.id)?.failureReason || 'Unknown'}</p></div>` : '';
 
-                 const apiResponseListHTML = isExpanded ?
-                     `<div class="col-span-1 md:col-span-2 mt-3">
-                         ${generateCardListHTML(testCase.apiResponseCards, 'API Response Cards', 'border-purple-400')}
-                      </div>` : '';
+                 // --- Generate API Response List HTML with Highlighting ---
+                 let apiResponseListHTML = '';
+                 if (isExpanded) {
+                     const expectedIdSet = new Set((testCase.expectedCards || []).map(c => c.id));
+                     const unexpectedIdSet = new Set((testCase.unexpectedCards || []).map(c => c.id));
+                     apiResponseListHTML = `
+                         <div class="col-span-1 md:col-span-2 mt-3">
+                             ${generateCardListHTML(
+                                 testCase.apiResponseCards,
+                                 'API Response Cards',
+                                 'border-purple-400',
+                                 expectedIdSet,
+                                 unexpectedIdSet
+                             )}
+                          </div>`;
+                 }
+                 // -------------------------------------------------------
 
+                 // Generate HTML for the detailed card lists if expanded
                  const detailsHTML = isExpanded ? `
                      <div class="mt-2 ml-6 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                          ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')}
@@ -409,6 +453,7 @@
                      </div>
                  ` : '';
 
+                 // Append the HTML for the current test case row
                  testCasesHTML += `
                      <div class="border-b border-gray-200 py-3 last:border-b-0">
                          <div class="flex items-center justify-between test-case-header" data-id="${testCase.id}">
@@ -427,6 +472,7 @@
                      </div>`;
             });
 
+            // Update the DOM
             testCasesContainer.innerHTML = testCasesHTML;
             testCasesContainer.style.display = 'block';
         }
