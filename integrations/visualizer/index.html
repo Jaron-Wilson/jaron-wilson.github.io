@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.7 Pokémon Card Test Result Visualizer</title>
+    <title>v1.7.1 Pokémon Card Test Result Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -38,9 +38,10 @@
             /* Add padding for highlights */
             padding-left: 0.5rem; padding-right: 0.5rem; /* px-2 */
             margin-bottom: 0.1rem; /* Slight space between items */
+            border-radius: 0.25rem; /* rounded */
         }
-        /* Highlight styles - Using Tailwind classes directly now for blue, keeping CSS for orange */
-        .highlight-unexpected { background-color: #ffedd5; /* orange-100 */ border-radius: 0.25rem; /* rounded */ }
+        /* Highlight styles - Using Tailwind classes directly now for blue & violet, keeping CSS for orange */
+        .highlight-unexpected { background-color: #ffedd5; /* orange-100 */ } /* Removed rounded from here, applied to all li */
 
         .card-list .card-detail { margin-right: 0.4em; /* Spacing between details */ }
         .card-list .card-id { font-weight: 600; /* font-semibold */ color: #374151;}
@@ -154,12 +155,15 @@
          * Handles 'null' string correctly.
          */
         function extractValue(content, key) {
+            // Match key= followed by any characters until the next comma or the end of the string/parenthesis
             const regex = new RegExp(`${key}=([^,)]+)`);
             const match = content.match(regex);
             if (match && match[1]) {
                  const value = match[1].trim();
+                 // Convert the literal string 'null' to the actual null value
                  return value === 'null' ? null : value;
             }
+            // Key not found or value missing after '='
             return null;
         }
 
@@ -167,17 +171,25 @@
          * Parses a string representation of a list of cards.
          */
         const parseCards = (cardsStr) => {
+            // Handle empty or invalid input string
             if (!cardsStr || typeof cardsStr !== 'string' || cardsStr.trim() === '[]' || cardsStr.trim() === '') {
                 return [];
             }
+            // Use regex to find all "Card(...)" occurrences globally
             const cardMatches = cardsStr.match(/Card\((.*?)\)/g);
+            // If no matches found, return empty array
             if (!cardMatches) { return []; }
 
+            // Process each matched "Card(...)" string
             return cardMatches.map(cardMatch => {
+                // Extract the content inside the parentheses, e.g., "id=sv1-1, name=Bulbasaur"
                 const content = cardMatch.substring(5, cardMatch.length - 1);
+                // Extract the card ID using the helper function
                 const id = extractValue(content, 'id');
-                if (!id) { return null; } // ID is mandatory
+                // A card MUST have an ID to be considered valid
+                if (!id) { return null; } // Skip this card if no ID
 
+                // Return the card object with all extracted fields
                 return {
                     id: id,
                     name: extractValue(content, 'name'),
@@ -187,78 +199,101 @@
                     price: extractValue(content, 'price'),
                     playTextHash: extractValue(content, 'playTextHash')
                 };
-            }).filter(card => card !== null);
+            }).filter(card => card !== null); // Filter out any nulls from invalid card structures
         };
 
         /**
          * Parses the entire log text to extract test results and summary statistics.
          */
         const parseTestResults = (text) => {
+             // Filter lines containing the relevant test result marker
              const testResultLines = text.split('\n').filter(line => line.includes('Results: TestResult'));
 
+             // Map each relevant line to a structured test result object
              const testResults = testResultLines.map(line => {
-                 const passed = (line.match(/passed=(true|false)/)?.[1] === 'true') || false;
-                 const supposedToFail = (line.match(/supposedToFail=(true|false)/)?.[1] === 'true') || false;
+                 // Extract basic boolean flags, ensuring they are always boolean
+                 const passed = (line.match(/passed=(true|false)/)?.[1] === 'true') || false; // Default to false if missing
+                 const supposedToFail = (line.match(/supposedToFail=(true|false)/)?.[1] === 'true') || false; // Default to false
+
+                 // Extract message and determine check type
                  const message = line.match(/message=\[([^\]]+)\]/)?.[1] || null;
                  const checkType = message ? (message.includes('Expected Check') ? 'Expected Check' : 'Unexpected Check') : null;
 
+                 // Extract the full string representations of Expected and Unexpected card lists
+                 // Regex lookahead assertion `(?=...)` ensures we capture the full list without including the next field delimiter
                  const expectedBlockMatch = line.match(/Expected: (\[.*?\])(?=, Unexpected:|, apiResponseCards=|, testCategories=|\)$)/);
                  const expectedCardsStr = expectedBlockMatch ? expectedBlockMatch[1] : '[]';
 
                  const unexpectedBlockMatch = line.match(/Unexpected: (\[.*?\])(?=, apiResponseCards=|, testCategories=|\)$)/);
                  const unexpectedCardsStr = unexpectedBlockMatch ? unexpectedBlockMatch[1] : '[]';
 
+                 // Extract apiResponseCards list string
                  const apiResponseBlockMatch = line.match(/apiResponseCards=(\[.*?\])(?=, testCategories=|\)$)/);
                  const apiResponseCardsStr = apiResponseBlockMatch ? apiResponseBlockMatch[1] : '[]';
 
+                 // Parse the card strings into arrays of objects
                  const expectedCards = parseCards(expectedCardsStr);
                  const unexpectedCards = parseCards(unexpectedCardsStr);
                  const apiResponseCards = parseCards(apiResponseCardsStr);
 
-                 const categoriesMatch = line.match(/testCategories=\[?([^\]]*)\]?/);
+                 // Extract test categories
+                 const categoriesMatch = line.match(/testCategories=\[?([^\]]*)\]?/); // Allow optional brackets
                  const categoriesStr = categoriesMatch ? categoriesMatch[1] : '';
                  const categories = categoriesStr && categoriesStr !== 'null' && categoriesStr.trim() !== '' ?
-                     categoriesStr.split(',').map(c => c.trim()).filter(c => c) : [];
+                     categoriesStr.split(',').map(c => c.trim()).filter(c => c) : []; // Split, trim, filter empty
 
+                 // Return the structured result for this line
                  return {
                      passed, checkType, message, expectedCards, unexpectedCards, apiResponseCards,
                      categories, supposedToFail,
-                     timestamp: line.split(' ')[0], raw: line
+                     timestamp: line.split(' ')[0], raw: line // Include timestamp and raw line if needed later
                  };
              });
 
+             // Group test results into pairs (Expected Check + Unexpected Check)
              const testCases = [];
              for (let i = 0; i < testResults.length; i += 2) {
                  if (i + 1 < testResults.length) {
                      const r1 = testResults[i];
                      const r2 = testResults[i+1];
+                      // Simple pairing logic: assume consecutive lines are pairs if check types differ
                       if (r1.checkType && r2.checkType && r1.checkType !== r2.checkType) {
-                         const supposedToFail = r1.supposedToFail || r2.supposedToFail;
+                         const supposedToFail = r1.supposedToFail || r2.supposedToFail; // Combine flag
                           testCases.push({
+                             // Assign based on checkType
                              unexpectedCheck: r1.checkType === 'Unexpected Check' ? r1 : r2,
                              expectedCheck: r1.checkType === 'Expected Check' ? r1 : r2,
+                             // Add apiResponseCards, prefer r1's but fallback to r2's, default empty array
                              apiResponseCards: r1.apiResponseCards || r2.apiResponseCards || [],
+                             // Combine categories (handle empty arrays) using Set for uniqueness
                              categories: [...new Set([...r1.categories, ...r2.categories])],
+                             // Overall pass status requires both checks to pass
                              passed: r1.passed && r2.passed,
                              supposedToFail: supposedToFail
                           });
                      } else {
+                         // Log if pairing seems incorrect (e.g., two 'Expected' checks in a row)
                          console.warn("Could not reliably pair test results at index", i, "- Check types:", r1.checkType, r2.checkType);
                      }
                  } else {
+                     // Log if there's an odd number of results
                      console.warn("Orphaned test result found at end of log:", testResults[i]);
                  }
              }
 
              // Process each paired test case
              testCases.forEach((testCase, index) => {
-                  testCase.id = index + 1;
+                  testCase.id = index + 1; // Assign a simple ID
+                  // Ensure card arrays exist even if parsing failed somehow
                   testCase.expectedCards = testCase.expectedCheck.expectedCards || [];
                   testCase.unexpectedCards = testCase.unexpectedCheck.unexpectedCards || [];
+                  // apiResponseCards already assigned during pairing
 
+                  // Extract unique card series identifiers (e.g., 'sv1', 'sv8') from all card lists
                   const cardSeries = new Set();
                   [...testCase.expectedCards, ...testCase.unexpectedCards, ...testCase.apiResponseCards].forEach(card => {
-                     if (card && card.id) {
+                     if (card && card.id) { // Check if card and card.id exist
+                         // Regex to match series prefix (letters/numbers, optional 'pt' + digits, followed by '-')
                          const seriesMatch = card.id.match(/^([a-zA-Z0-9]+(?:pt\d+)?)-/);
                          if (seriesMatch && seriesMatch[1]) {
                              cardSeries.add(seriesMatch[1]);
@@ -267,33 +302,49 @@
                   });
                   testCase.cardSeries = [...cardSeries];
 
-                  testCase.isDuplicate = testCases.slice(0, index).some(tc =>
+                 // Identify duplicate test cases based on expected/unexpected card lists (simple JSON compare)
+                 // Note: This might be slow for very large numbers of test cases
+                 testCase.isDuplicate = testCases.slice(0, index).some(tc =>
                      JSON.stringify(tc.expectedCards) === JSON.stringify(testCase.expectedCards) &&
                      JSON.stringify(tc.unexpectedCards) === JSON.stringify(testCase.unexpectedCards)
-                  );
+                 );
              });
 
+             // Filter out duplicates
              const uniqueTestCases = testCases.filter(tc => !tc.isDuplicate);
+
+             // Calculate summary statistics
              const passedTests = uniqueTestCases.filter(tc => tc.passed).length;
              const failedTests = uniqueTestCases.length - passedTests;
              const expectedFailedTests = uniqueTestCases.filter(tc => !tc.passed && tc.supposedToFail).length;
              const unexpectedFailedTests = failedTests - expectedFailedTests;
+
+             // Collect all unique card series across all unique tests
              const allCardSeries = new Set();
              uniqueTestCases.forEach(tc => tc.cardSeries.forEach(series => allCardSeries.add(series)));
+
+             // Analyze failures for display
              const failureAnalysis = uniqueTestCases
                  .filter(tc => !tc.passed)
                  .map(tc => {
-                     let failureReason = "Unknown failure state";
+                     let failureReason = "Unknown failure state"; // Default
+                     // Determine reason based on which check(s) failed
                      const unexpectedFailed = !tc.unexpectedCheck.passed;
                      const expectedFailed = !tc.expectedCheck.passed;
+
                      if (unexpectedFailed && !expectedFailed) { failureReason = "Unexpected cards present"; }
                      else if (!unexpectedFailed && expectedFailed) { failureReason = "Expected cards missing"; }
                      else if (unexpectedFailed && expectedFailed) { failureReason = "Both expected missing and unexpected present"; }
+
                      return { testCaseId: tc.id, failureReason };
                  });
 
+             // Return the final processed data structure
              return {
-                 summary: { totalTests: uniqueTestCases.length, passedTests, failedTests, expectedFailedTests, unexpectedFailedTests, cardSeries: [...allCardSeries] },
+                 summary: {
+                     totalTests: uniqueTestCases.length, passedTests, failedTests,
+                     expectedFailedTests, unexpectedFailedTests, cardSeries: [...allCardSeries]
+                 },
                  testCases: uniqueTestCases,
                  failures: failureAnalysis
              };
@@ -306,13 +357,16 @@
          * Renders the summary Pie and Bar charts.
          */
         function renderSummaryCharts() {
+            // Ensure data exists
             if (!testData || !testData.summary) {
-                summaryChartsContainer.innerHTML = '';
+                summaryChartsContainer.innerHTML = ''; // Clear if no data
                 summaryChartsContainer.style.display = 'none';
                 return;
             }
+            // Destroy previous chart instances to prevent memory leaks and conflicts
             if (pieChartInstance) pieChartInstance.destroy();
             if (barChartInstance) barChartInstance.destroy();
+            // Reset container HTML before rendering new charts
             summaryChartsContainer.innerHTML = `
                  <div id="pieChartContainerWrapper" class="bg-white p-4 rounded-lg shadow-md w-full md:w-1/2"></div>
                  <div id="barChartContainerWrapper" class="bg-white p-4 rounded-lg shadow-md w-full md:w-1/2"></div>
@@ -348,6 +402,7 @@
             const barChartData = { labels: seriesLabels, datasets: [{ label: 'Test Cases', data: seriesDataValues, backgroundColor: seriesColors, borderWidth: 1 }] };
             barChartInstance = new Chart(barCtx, { type: 'bar', data: barChartData, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} tests` } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
 
+            // Make the container visible now that charts are ready
             summaryChartsContainer.style.display = 'flex';
         }
 
@@ -370,15 +425,22 @@
             // Generate list items for each card
             const listItems = cards.map((card) => {
                 // Determine highlight class based on provided ID sets
-                // Prioritize unexpected highlight over expected
-                let liClasses = 'px-2'; // Base padding
-                if (unexpectedIds && unexpectedIds.has(card.id)) {
-                    // Use custom CSS class for orange highlight
+                let liClasses = 'px-2'; // Base padding for all items
+                const isUnexpected = unexpectedIds && unexpectedIds.has(card.id);
+                const isExpected = expectedIds && expectedIds.has(card.id);
+
+                // --- UPDATED: Check for BOTH first ---
+                if (isUnexpected && isExpected) {
+                    // Apply a distinct style for cards in BOTH lists (e.g., light violet)
+                    liClasses = 'bg-violet-100 rounded px-2'; // Use violet-100
+                } else if (isUnexpected) {
+                    // Apply orange highlight if only unexpected
                     liClasses = 'highlight-unexpected px-2';
-                } else if (expectedIds && expectedIds.has(card.id)) {
-                    // Use Tailwind class directly for light blue highlight
-                    liClasses = 'bg-blue-100 rounded px-2'; // Light blue highlight
+                } else if (isExpected) {
+                    // Apply light blue highlight if only expected
+                    liClasses = 'bg-blue-100 rounded px-2';
                 }
+                // --------------------------------------
 
                 // Build the inner HTML for the card details based on toggles
                 let cardDetails = `<span class="card-detail card-id">${card.id || '&lt;no id&gt;'}</span>`;
@@ -406,50 +468,62 @@
          * Renders the list of test cases.
          */
         function renderTestCases() {
+            // Ensure data exists
             if (!testData || !testData.testCases) {
                 testCasesContainer.innerHTML = '<h3 class="text-xl font-bold mb-4 text-gray-700">Test Cases</h3><p class="text-gray-600">No test cases found or parsed.</p>';
                 testCasesContainer.style.display = 'block';
                 return;
             }
 
+            // Start building the HTML string for the test cases section
             let testCasesHTML = '<h3 class="text-xl font-bold mb-4 text-gray-700">Test Cases</h3>';
+
+            // Iterate over each unique test case
             testData.testCases.forEach((testCase) => {
+                 // Determine if the current test case should be expanded
                  const isExpanded = expandedTestCase === testCase.id;
+                 // Select the correct status icon based on pass/fail and expected fail status
                  const statusIcon = (testCase.passed ? ICONS.Check : (testCase.supposedToFail ? ICONS.XFailExpected : ICONS.XFailUnexpected)) || '';
+                 // Select the correct expand/collapse icon
                  const expandIcon = (isExpanded ? ICONS.ChevronUp : ICONS.ChevronDown) || '';
+                 // Generate HTML for card series color indicators
                  const seriesIndicators = testCase.cardSeries.map(series =>
                      `<span class="ml-1 inline-block w-4 h-4 rounded-full border border-gray-300" style="background-color: ${COLORS[series] || COLORS.default};" title="Series: ${series}"></span>`
                  ).join('');
+                 // Generate badge for expected failures if applicable
                  const expectedFailBadge = (!testCase.passed && testCase.supposedToFail) ? `<span class="badge bg-amber-100 text-amber-800">Expected to Fail</span>` : '';
+                 // Generate badge for categories if present
                  const categoryBadge = testCase.categories.length > 0 ? `<span class="badge bg-gray-100 text-gray-600">${testCase.categories.join(', ')}</span>` : '';
+                 // Generate failure reason text if the test failed and is expanded
                  const failureReason = (!testCase.passed && isExpanded) ?
                      `<div class="col-span-1 md:col-span-2 failure-reason"><p><strong>Failure Reason:</strong> ${testData.failures.find(f => f.testCaseId === testCase.id)?.failureReason || 'Unknown'}</p></div>` : '';
 
-                 // --- Generate API Response List HTML with Highlighting ---
+                 // Generate API Response List HTML with Highlighting logic
                  let apiResponseListHTML = '';
                  if (isExpanded) {
+                     // Create Sets of IDs for efficient lookup during highlighting
                      const expectedIdSet = new Set((testCase.expectedCards || []).map(c => c.id));
                      const unexpectedIdSet = new Set((testCase.unexpectedCards || []).map(c => c.id));
+                     // Generate the HTML, passing the ID sets for highlighting
                      apiResponseListHTML = `
                          <div class="col-span-1 md:col-span-2 mt-3">
                              ${generateCardListHTML(
                                  testCase.apiResponseCards,
                                  'API Response Cards',
-                                 'border-purple-400',
-                                 expectedIdSet,
-                                 unexpectedIdSet
+                                 'border-purple-400', // Use purple border for this list
+                                 expectedIdSet,      // Pass expected IDs
+                                 unexpectedIdSet     // Pass unexpected IDs
                              )}
                           </div>`;
                  }
-                 // -------------------------------------------------------
 
                  // Generate HTML for the detailed card lists if expanded
                  const detailsHTML = isExpanded ? `
                      <div class="mt-2 ml-6 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                         ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')}
-                         ${generateCardListHTML(testCase.unexpectedCards, 'Unexpected Cards', 'border-orange-400')}
+                         ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')} {/* No highlight sets passed */}
+                         ${generateCardListHTML(testCase.unexpectedCards, 'Unexpected Cards', 'border-orange-400')} {/* No highlight sets passed */}
                          ${failureReason}
-                         ${apiResponseListHTML}
+                         ${apiResponseListHTML} {/* Insert API response list */}
                      </div>
                  ` : '';
 
@@ -457,14 +531,12 @@
                  testCasesHTML += `
                      <div class="border-b border-gray-200 py-3 last:border-b-0">
                          <div class="flex items-center justify-between test-case-header" data-id="${testCase.id}">
-                             <div class="flex items-center flex-wrap mr-2">
-                                 ${statusIcon}
+                             <div class="flex items-center flex-wrap mr-2"> ${statusIcon}
                                  <span class="font-medium mr-2">Test Case #${testCase.id}</span>
                                  ${expectedFailBadge}
                                  ${categoryBadge}
                              </div>
-                             <div class="flex items-center flex-shrink-0 pl-2">
-                                 <div class="flex mr-2">${seriesIndicators}</div>
+                             <div class="flex items-center flex-shrink-0 pl-2"> <div class="flex mr-2">${seriesIndicators}</div>
                                  ${expandIcon}
                              </div>
                          </div>
@@ -472,8 +544,9 @@
                      </div>`;
             });
 
-            // Update the DOM
+            // Update the DOM with the generated HTML
             testCasesContainer.innerHTML = testCasesHTML;
+            // Ensure the container is visible
             testCasesContainer.style.display = 'block';
         }
 
@@ -486,20 +559,25 @@
         function handleParse() {
             const text = logInput.value;
             errorMessage.textContent = '';
+            // Reset state and UI before parsing
             testData = null;
             expandedTestCase = null;
             summaryChartsContainer.style.display = 'none';
             testCasesContainer.style.display = 'none';
+            // Destroy charts if they exist from previous run
             if (pieChartInstance) pieChartInstance.destroy();
             if (barChartInstance) barChartInstance.destroy();
             pieChartInstance = null;
             barChartInstance = null;
 
+            // Validate input
             if (!text.trim()) {
                 errorMessage.textContent = "Please paste the log data first"; return;
             }
+            // Parse and render
             try {
                 testData = parseTestResults(text);
+                // Check if parsing returned valid data structure
                 if (testData && testData.summary && testData.testCases) {
                     renderSummaryCharts();
                     renderTestCases();
@@ -507,8 +585,10 @@
                      throw new Error("Parsing did not return expected data structure.");
                 }
             } catch (err) {
+                // Display error message to user and log details
                 errorMessage.textContent = `Error processing data. Check console for details.`;
                 console.error("Processing Error:", err);
+                // Ensure results area is cleared/hidden on error
                 summaryChartsContainer.innerHTML = '';
                 testCasesContainer.innerHTML = '<p class="text-red-600">Failed to process test results.</p>';
                 testCasesContainer.style.display = 'block';
@@ -519,23 +599,38 @@
          * Handles click events on the test cases container for expand/collapse.
          */
         function handleExpandToggle(event) {
+            // Find the closest ancestor header element that was clicked
             const header = event.target.closest('.test-case-header');
+            // If the click wasn't on a header, do nothing
             if (!header) return;
+
+            // Get the test case ID from the data attribute
             const id = parseInt(header.getAttribute('data-id'), 10);
+            // If ID is invalid, do nothing
             if (isNaN(id)) return;
+
+            // Toggle the expanded state
             expandedTestCase = (expandedTestCase === id) ? null : id;
-            renderTestCases(); // Re-render test cases on toggle
+            // Re-render only the test cases list to reflect the change
+            renderTestCases();
         }
 
         // --- Initialization ---
+        /**
+         * Sets up event listeners when the DOM is fully loaded.
+         */
         document.addEventListener('DOMContentLoaded', () => {
+            // Listener for the main parse button
             parseButton.addEventListener('click', handleParse);
+            // Listener for expand/collapse clicks (delegated to container)
             testCasesContainer.addEventListener('click', handleExpandToggle);
 
+            // Add listeners to all display option toggles
             const toggles = displayOptionsContainer.querySelectorAll('input[type="checkbox"]');
             toggles.forEach(toggle => {
                 toggle.addEventListener('change', () => {
-                    if (testData) { renderTestCases(); } // Re-render if data exists
+                    // Re-render test cases if data exists when a toggle changes
+                    if (testData) { renderTestCases(); }
                 });
             });
 
