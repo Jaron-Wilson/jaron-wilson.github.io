@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.6 Pokémon Card Test Result Visualizer</title>
+    <title>v1.6.2 Pokémon Card Test Result Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -61,13 +61,13 @@
             <h3 class="text-lg font-semibold mb-3 text-gray-700">Card Display Options:</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2">
                 <div><input type="checkbox" id="toggleName" checked><label for="toggleName"> Name</label></div>
-                <div><input type="checkbox" id="toggleSetName" ><label for="toggleSetName"> Set Name</label></div>
-                <div><input type="checkbox" id="toggleSetNumber" ><label for="toggleSetNumber"> Set Number</label></div>
-                <div><input type="checkbox" id="toggleSetAbbr" ><label for="toggleSetAbbr"> Set Abbr.</label></div>
-                <div><input type="checkbox" id="togglePrice" ><label for="togglePrice"> Price</label></div>
-                <div><input type="checkbox" id="toggleHash" ><label for="toggleHash"> Hash</label></div>
+                <div><input type="checkbox" id="toggleSetName"><label for="toggleSetName"> Set Name</label></div>
+                <div><input type="checkbox" id="toggleSetNumber"><label for="toggleSetNumber"> Set Number</label></div>
+                <div><input type="checkbox" id="toggleSetAbbr"><label for="toggleSetAbbr"> Set Abbr.</label></div>
+                <div><input type="checkbox" id="togglePrice"><label for="togglePrice"> Price</label></div>
+                <div><input type="checkbox" id="toggleHash"><label for="toggleHash"> Hash</label></div>
             </div>
-        </div>
+            </div>
 
         <div class="bg-white p-4 rounded-lg shadow-md mb-6">
             <div class="flex items-center mb-2">
@@ -99,17 +99,17 @@
             failed: '#f87171', // red-400
             expectedFail: '#fbbf24', // amber-400
             sv1: '#60a5fa', // blue-400
-            sv2: '#a78bfa', // violet-400 (Added example)
-            sv3: '#f472b6', // pink-400 (Added example)
+            sv2: '#a78bfa', // violet-400
+            sv3: '#f472b6', // pink-400
             sv3pt5: '#c084fc', // purple-400
-            sv4: '#34d399', // emerald-400 (Added example)
-            sv4pt5: '#fde047', // yellow-300 (Adjusted example)
+            sv4: '#34d399', // emerald-400
+            sv4pt5: '#fde047', // yellow-300
             sv5: '#fcd34d', // yellow-400
-            sv6: '#818cf8', // indigo-400 (Added example)
-            sv6pt5: '#7dd3fc', // sky-300 (Added example)
-            sv7: '#e879f9', // fuchsia-400 (Added example)
+            sv6: '#818cf8', // indigo-400
+            sv6pt5: '#7dd3fc', // sky-300
+            sv7: '#e879f9', // fuchsia-400
             sv8: '#f97316', // orange-500
-            sv8pt5: '#93c5fd', // blue-300 (Added example)
+            sv8pt5: '#93c5fd', // blue-300
             default: '#94a3b8', // slate-400
         };
 
@@ -193,21 +193,18 @@
                  const message = line.match(/message=\[([^\]]+)\]/)?.[1] || null;
                  const checkType = message ? (message.includes('Expected Check') ? 'Expected Check' : 'Unexpected Check') : null;
 
-                 // Regex lookahead assertion `(?=...)` ensures we capture the full list without including the next field delimiter
                  const expectedBlockMatch = line.match(/Expected: (\[.*?\])(?=, Unexpected:|, apiResponseCards=|, testCategories=|\)$)/);
                  const expectedCardsStr = expectedBlockMatch ? expectedBlockMatch[1] : '[]';
 
                  const unexpectedBlockMatch = line.match(/Unexpected: (\[.*?\])(?=, apiResponseCards=|, testCategories=|\)$)/);
                  const unexpectedCardsStr = unexpectedBlockMatch ? unexpectedBlockMatch[1] : '[]';
 
-                 // --- NEW: Extract apiResponseCards ---
                  const apiResponseBlockMatch = line.match(/apiResponseCards=(\[.*?\])(?=, testCategories=|\)$)/);
                  const apiResponseCardsStr = apiResponseBlockMatch ? apiResponseBlockMatch[1] : '[]';
-                 // ------------------------------------
 
                  const expectedCards = parseCards(expectedCardsStr);
                  const unexpectedCards = parseCards(unexpectedCardsStr);
-                 const apiResponseCards = parseCards(apiResponseCardsStr); // --- NEW: Parse API response cards ---
+                 const apiResponseCards = parseCards(apiResponseCardsStr);
 
                  const categoriesMatch = line.match(/testCategories=\[?([^\]]*)\]?/);
                  const categoriesStr = categoriesMatch ? categoriesMatch[1] : '';
@@ -215,7 +212,7 @@
                      categoriesStr.split(',').map(c => c.trim()).filter(c => c) : [];
 
                  return {
-                     passed, checkType, message, expectedCards, unexpectedCards, apiResponseCards, // --- NEW: Added apiResponseCards ---
+                     passed, checkType, message, expectedCards, unexpectedCards, apiResponseCards,
                      categories, supposedToFail,
                      timestamp: line.split(' ')[0], raw: line
                  };
@@ -231,9 +228,7 @@
                           testCases.push({
                              unexpectedCheck: r1.checkType === 'Unexpected Check' ? r1 : r2,
                              expectedCheck: r1.checkType === 'Expected Check' ? r1 : r2,
-                             // --- NEW: Add apiResponseCards, prefer r1 but fallback to r2 ---
                              apiResponseCards: r1.apiResponseCards || r2.apiResponseCards || [],
-                             // ---------------------------------------------------------------
                              categories: [...new Set([...r1.categories, ...r2.categories])],
                              passed: r1.passed && r2.passed,
                              supposedToFail: supposedToFail
@@ -251,10 +246,8 @@
                   testCase.id = index + 1;
                   testCase.expectedCards = testCase.expectedCheck.expectedCards || [];
                   testCase.unexpectedCards = testCase.unexpectedCheck.unexpectedCards || [];
-                  // apiResponseCards already assigned during pairing
 
                   const cardSeries = new Set();
-                   // Include series from all 3 lists (Expected, Unexpected, API Response)
                   [...testCase.expectedCards, ...testCase.unexpectedCards, ...testCase.apiResponseCards].forEach(card => {
                      if (card && card.id) {
                          const seriesMatch = card.id.match(/^([a-zA-Z0-9]+(?:pt\d+)?)-/);
@@ -267,9 +260,7 @@
 
                   testCase.isDuplicate = testCases.slice(0, index).some(tc =>
                      JSON.stringify(tc.expectedCards) === JSON.stringify(testCase.expectedCards) &&
-                     JSON.stringify(tc.unexpectedCards) === JSON.stringify(testCase.unexpectedCards) &&
-                     // Optional: consider apiResponseCards for duplication check? For now, keep it simpler.
-                     // JSON.stringify(tc.apiResponseCards) === JSON.stringify(testCase.apiResponseCards)
+                     JSON.stringify(tc.unexpectedCards) === JSON.stringify(testCase.unexpectedCards)
                   );
              });
 
@@ -404,20 +395,17 @@
                  const failureReason = (!testCase.passed && isExpanded) ?
                      `<div class="col-span-1 md:col-span-2 failure-reason"><p><strong>Failure Reason:</strong> ${testData.failures.find(f => f.testCaseId === testCase.id)?.failureReason || 'Unknown'}</p></div>` : '';
 
-                 // --- NEW: Generate API Response List HTML ---
                  const apiResponseListHTML = isExpanded ?
                      `<div class="col-span-1 md:col-span-2 mt-3">
                          ${generateCardListHTML(testCase.apiResponseCards, 'API Response Cards', 'border-purple-400')}
                       </div>` : '';
-                 // -----------------------------------------
 
-                 // Generate HTML for the detailed card lists if expanded
                  const detailsHTML = isExpanded ? `
                      <div class="mt-2 ml-6 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                          ${generateCardListHTML(testCase.expectedCards, 'Expected Cards', 'border-blue-400')}
                          ${generateCardListHTML(testCase.unexpectedCards, 'Unexpected Cards', 'border-orange-400')}
                          ${failureReason}
-                         ${apiResponseListHTML} {/* --- NEW: Insert API Response List --- */}
+                         ${apiResponseListHTML}
                      </div>
                  ` : '';
 
