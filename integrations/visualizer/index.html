@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.7.3 Pokémon Card Test Result Visualizer</title>
+    <title>v1.7.4 Pokémon Card Test Result Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -444,7 +444,7 @@
 
                 // Build the inner HTML for the card details based on toggles
                 // --- UPDATED: Wrap ID in anchor tag ---
-                let cardDetails = `<a href="http://localhost:4200/card/${card.id}" target="_blank" rel="noopener noreferrer" class="card-detail card-id text-blue-600 hover:underline">${card.id || '&lt;no id&gt;'}</a>`;
+                let cardDetails = `<a href="http://localhost:4200/card/${card.id}#:~:text=Set%3A%20" target="_blank" rel="noopener noreferrer" class="card-detail card-id text-blue-600 hover:underline">${card.id || '&lt;no id&gt;'}</a>`;
                 // --------------------------------------
                 if (showName && card.name) cardDetails += `: <span class="card-detail card-name">${card.name}</span>`;
                 if (showSetName && card.setName) cardDetails += `<span class="card-detail card-set-name"> (${card.setName})</span>`;
