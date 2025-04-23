@@ -442,7 +442,9 @@
                 }
 
                 // Build the inner HTML for the card details based on toggles
-                let cardDetails = `<span class="card-detail card-id">${card.id || '&lt;no id&gt;'}</span>`;
+                //let cardDetails = `<span class="card-detail card-id">${card.id || '&lt;no id&gt;'}</span>`;
+                // Start the details string with an anchor tag wrapping the ID
+let cardDetails = `<a href="http://localhost:4200/card/<span class="math-inline">\{card\.id\}" target\="\_blank" rel\="noopener noreferrer" class\="card\-detail card\-id text\-blue\-600 hover\:underline"\></span>{card.id || '&lt;no id&gt;'}</a>`;
                 if (showName && card.name) cardDetails += `: <span class="card-detail card-name">${card.name}</span>`;
                 if (showSetName && card.setName) cardDetails += `<span class="card-detail card-set-name"> (${card.setName})</span>`;
                 if (showSetNumber && card.setNumber) cardDetails += `<span class="card-detail card-set-number"> #${card.setNumber}</span>`;
