@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Roulette Wheel with Gemini AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Added Showdown.js for Markdown rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a202c; /* Equivalent to bg-gray-900 */
+        }
+        canvas {
+            transition: transform 10s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .result-modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .filter-btn {
+            background-color: #4a5568; /* gray-600 */
+            color: #e2e8f0; /* gray-300 */
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .filter-btn.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            font-weight: 600;
+        }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #4f46e5; /* Indigo */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Styling for rendered markdown */
+        #geminiResponse strong {
+            color: #a5b4fc; /* indigo-300 */
+        }
+        #geminiResponse ol {
+            list-style-position: inside;
+            padding-left: 0.5rem;
+        }
+         #geminiResponse li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="text-center mb-4">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Game Roulette</h1>
+        <p class="text-lg text-gray-400">Let AI help you decide what to play!</p>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div id="filterContainer" class="flex flex-wrap justify-center gap-2 mb-4">
+        <button class="filter-btn px-4 py-2 rounded-md text-sm sm:text-base active" data-filter="all">All</button>
+        <button class="filter-btn px-4 py-2 rounded-md text-sm sm:text-base" data-filter="1">1 Player</button>
+        <button class="filter-btn px-4 py-2 rounded-md text-sm sm:text-base" data-filter="2">2 Players</button>
+        <button class="filter-btn px-4 py-2 rounded-md text-sm sm:text-base" data-filter="3">3 Players</button>
+        <button class="filter-btn px-4 py-2 rounded-md text-sm sm:text-base" data-filter="4">4 Players</button>
+        <button class="filter-btn px-4 py-2 rounded-md text-sm sm:text-base" data-filter="5">5+ Players</button>
+    </div>
+
+    <!-- Roulette Wheel Container -->
+    <div class="wheel-container relative w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] flex items-center justify-center">
+        <div class="absolute top-[-15px] left-1/2 -translate-x-1/2 z-20">
+            <div class="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[30px] border-t-red-500"></div>
+        </div>
+        <canvas id="wheel" width="500" height="500" class="rounded-full shadow-2xl"></canvas>
+    </div>
+
+    <!-- Spin Button -->
+    <button id="spinBtn" class="mt-8 px-12 py-4 bg-indigo-600 text-white font-bold text-xl rounded-lg shadow-lg hover:bg-indigo-700 active:scale-95 transition-transform duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 disabled:bg-gray-500 disabled:cursor-not-allowed">
+        SPIN
+    </button>
+    
+    <!-- Result Modal -->
+    <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl text-center p-6 sm:p-8 max-w-lg w-full transform scale-95 transition-transform duration-300 ease-out">
+            <h2 class="text-2xl font-bold text-gray-300 mb-2">The wheel has chosen...</h2>
+            <p id="resultText" class="text-4xl font-bold text-indigo-400 my-4"></p>
+            
+            <!-- Gemini Features -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                <button id="whyPlayBtn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">✨ Why should I play this?</button>
+                <button id="challengeBtn" class="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors">✨ Give me a challenge</button>
+                <button id="suggestBtn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">✨ Suggest a Similar Game</button>
+            </div>
+
+            <!-- Gemini Response Area with Scrollbar -->
+            <div id="geminiResponseContainer" class="mt-4 text-left bg-gray-700 p-4 rounded-lg hidden overflow-y-auto max-h-64">
+                 <div id="loader" class="loader hidden"></div>
+                 <div id="geminiResponse" class="text-gray-300 whitespace-pre-wrap"></div>
+            </div>
+
+            <button id="closeModalBtn" class="mt-6 px-8 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultModal = document.getElementById('resultModal');
+        const resultText = document.getElementById('resultText');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const filterContainer = document.getElementById('filterContainer');
+        const whyPlayBtn = document.getElementById('whyPlayBtn');
+        const challengeBtn = document.getElementById('challengeBtn');
+        const suggestBtn = document.getElementById('suggestBtn');
+        const geminiResponseContainer = document.getElementById('geminiResponseContainer');
+        const geminiResponseEl = document.getElementById('geminiResponse');
+        const loader = document.getElementById('loader');
+
+        // --- Game Data ---
+        const allGames = [
+            { name: "Enshrouded", players: 5 }, { name: "Abiotic Factor", players: 5 }, { name: "Planet Coaster", players: 1 }, 
+            { name: "Super WorldBox", players: 1 }, { name: "Buckshot Roulette", players: 1 }, { name: "FTL: Faster Than Light", players: 1 }, 
+            { name: "Hacknet", players: 1 }, { name: "Friends vs Friends", players: 4 }, { name: "Among Us", players: 5 }, 
+            { name: "Content Warning", players: 4 }, { name: "Scrap Mechanic", players: 5 }, { name: "Rainbow Six Siege", players: 5 }, 
+            { name: "HELLDIVERS™ 2", players: 4 }, { name: "Wallpaper Engine", players: 1 }, { name: "The Survivalists", players: 4 }, 
+            { name: "Lethal Company", players: 4 }, { name: "The Walking Dead", players: 1 }, { name: "Minecraft Legends", players: 5 }, 
+            { name: "State of Decay 2", players: 4 }, { name: "The Elder Scrolls Online", players: 5 }, { name: "Factorio", players: 5 }, 
+            { name: "Risk of Rain 2", players: 4 }, { name: "Grounded", players: 4 }, { name: "Oxygen Not Included", players: 1 }, 
+            { name: "BattleBit Remastered", players: 5 }, { name: "The Elder Scrolls V: Skyrim", players: 1 }, { name: "ASTRONEER", players: 4 }, 
+            { name: "Becastled", players: 1 }, { name: "Terraria", players: 5 }, { name: "Besiege", players: 1 }, 
+            { name: "Bad North", players: 1 }, { name: "Rain World", players: 4 }, { name: "Grand Theft Auto V", players: 5 }, 
+            { name: "Stardew Valley", players: 4 }, { name: "Left 4 Dead 2", players: 5 }, { name: "Portal 2", players: 2 }, 
+            { name: "Half-Life 2", players: 1 }, { name: "FortressCraft Evolved!", players: 5 }, { name: "Don't Starve Together", players: 5 }, 
+            { name: "Deep Rock Galactic", players: 4 }, { name: "Total Annihilation", players: 5 }, { name: "STAR WARS Saga", players: 5 }
+        ];
+
+        let currentGames = [...allGames];
+        let selectedGameName = '';
+        
+        const colors = [ "#4f46e5", "#6366f1", "#818cf8", "#a5b4fc", "#c7d2fe", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#bbf7d0", "#d97706", "#f59e0b", "#facc15", "#fde047", "#fef08a"];
+
+        let currentRotation = 0;
+        let isSpinning = false;
+        
+        // --- Gemini API & Markdown ---
+        const API_KEY = ""; // Leave blank, Canvas will handle the key
+        const markdownConverter = new showdown.Converter(); // Create a single converter instance
+
+        async function callGemini(prompt) {
+            geminiResponseContainer.style.display = 'block';
+            geminiResponseEl.style.display = 'none';
+            loader.style.display = 'block';
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const markdownText = result.candidates[0].content.parts[0].text;
+                    // Convert markdown to HTML and set it
+                    geminiResponseEl.innerHTML = markdownConverter.makeHtml(markdownText);
+                } else {
+                    geminiResponseEl.textContent = 'Sorry, I could not get a response. Please try again.';
+                }
+
+            } catch (error) {
+                console.error("Gemini API call error:", error);
+                geminiResponseEl.textContent = 'An error occurred while contacting the AI. Check the console for details.';
+            } finally {
+                loader.style.display = 'none';
+                geminiResponseEl.style.display = 'block';
+            }
+        }
+
+
+        // --- Wheel Drawing and Spinning ---
+        function drawWheel(size) {
+            const numSegments = currentGames.length;
+            if (numSegments === 0) {
+                ctx.clearRect(0, 0, size, size);
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = `bold ${size * 0.08}px Poppins`;
+                ctx.fillText("No Games Found", size / 2, size / 2);
+                spinBtn.disabled = true;
+                return;
+            }
+            spinBtn.disabled = false;
+
+            const arcSize = 2 * Math.PI / numSegments;
+            const radius = size / 2;
+            ctx.clearRect(0, 0, size, size); 
+            ctx.strokeStyle = '#1a202c'; 
+            ctx.lineWidth = 3;
+            ctx.save();
+            ctx.translate(radius, radius); 
+
+            for (let i = 0; i < numSegments; i++) {
+                const angle = i * arcSize;
+                ctx.fillStyle = colors[i % colors.length];
+
+                ctx.beginPath();
+                ctx.arc(0, 0, radius - 5, angle, angle + arcSize, false);
+                ctx.arc(0, 0, radius * 0.2, angle + arcSize, angle, true);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.save();
+                ctx.fillStyle = "white";
+                ctx.translate(0, 0);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.textBaseline = "middle";
+                const fontSize = numSegments > 20 ? radius * 0.045 : radius * 0.06;
+                ctx.font = `bold ${fontSize}px Poppins`; 
+                const text = currentGames[i].name;
+                ctx.fillText(text, radius - 15, 0);
+                ctx.restore();
+            }
+            ctx.restore();
+            
+            ctx.fillStyle = '#4a5568';
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius * 0.18, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#2d3748';
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius * 0.12, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function spin() {
+            if (isSpinning || currentGames.length === 0) return;
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            const spinAngle = Math.random() * 360 + 360 * 7; 
+            const totalRotation = currentRotation + spinAngle;
+            
+            canvas.style.transition = 'transform 8s cubic-bezier(0.15, 0.75, 0.35, 1)';
+            canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+            setTimeout(() => {
+                const numSegments = currentGames.length;
+                const finalAngle = totalRotation % 360;
+                const degreesPerSegment = 360 / numSegments;
+                const winningAngle = (270 - finalAngle + 360) % 360;
+                const winningIndex = Math.floor(winningAngle / degreesPerSegment);
+                
+                showResult(currentGames[winningIndex].name);
+                
+                isSpinning = false;
+                spinBtn.disabled = false;
+                canvas.style.transition = 'none';
+                canvas.style.transform = `rotate(${finalAngle}deg)`;
+                currentRotation = finalAngle;
+
+            }, 8000); 
+        }
+        
+        // --- Event Listeners ---
+        filterContainer.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            const filter = e.target.dataset.filter;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+
+            if (filter === 'all') {
+                currentGames = [...allGames];
+            } else {
+                const playerCount = parseInt(filter, 10);
+                if (playerCount < 5) {
+                    currentGames = allGames.filter(game => game.players === playerCount);
+                } else {
+                    currentGames = allGames.filter(game => game.players >= 5);
+                }
+            }
+            currentRotation = 0;
+            canvas.style.transition = 'none';
+            canvas.style.transform = `rotate(0deg)`;
+            setCanvasSize();
+        });
+
+        whyPlayBtn.addEventListener('click', () => {
+            const prompt = `You are a helpful and enthusiastic gaming assistant. A user has just landed on the game "${selectedGameName}" on a roulette wheel. Give them a short, exciting, one-paragraph summary of why they should play it right now. Focus on the core fun factor and what makes it unique.`;
+            callGemini(prompt);
+        });
+
+        challengeBtn.addEventListener('click', () => {
+            const prompt = `You are a creative gaming assistant. For the video game "${selectedGameName}", generate 3 unique and fun gameplay challenges to make it more interesting. Present them as a simple numbered list with bold headings for each challenge. For example: **1. The Pacifist:** Try to win without...`;
+            callGemini(prompt);
+        });
+
+        suggestBtn.addEventListener('click', () => {
+            const ownedGamesList = allGames.map(g => g.name).join(', ');
+            const prompt = `I own the following games: ${ownedGamesList}. The roulette wheel just selected "${selectedGameName}". Based on this, suggest one similar game that is NOT in my owned games list. Provide the suggested game's name in bold, followed by a one-paragraph reason why I would like it.`;
+            callGemini(prompt);
+        });
+
+        function showResult(gameName) {
+            selectedGameName = gameName;
+            resultText.textContent = gameName;
+            geminiResponseContainer.style.display = 'none'; // Hide AI response on new spin result
+            geminiResponseEl.innerHTML = '';
+            resultModal.classList.remove('opacity-0', 'pointer-events-none');
+            resultModal.querySelector('div').classList.remove('scale-95');
+        }
+
+        function hideResult() {
+            resultModal.classList.add('opacity-0', 'pointer-events-none');
+             resultModal.querySelector('div').classList.add('scale-95');
+        }
+
+        spinBtn.addEventListener('click', spin);
+        closeModalBtn.addEventListener('click', hideResult);
+
+        // --- Responsive Sizing ---
+        function setCanvasSize() {
+            const container = document.querySelector('.wheel-container');
+            // FIX: Ensure size is never negative or too small to prevent drawing errors.
+            let size = Math.min(500, window.innerWidth - 40, window.innerHeight * 0.6);
+            size = Math.max(20, size); // Set a minimum size of 20px
+
+            container.style.width = `${size}px`;
+            container.style.height = `${size}px`;
+            
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.scale(dpr, dpr);
+            
+            drawWheel(size);
+        }
+        
+        window.addEventListener('resize', setCanvasSize);
+        // Initial setup
+        setCanvasSize();
+
+    </script>
+</body>
+</html>
