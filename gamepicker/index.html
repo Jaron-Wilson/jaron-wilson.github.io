@@ -286,18 +286,22 @@
                 if (!rawText) return;
 
                 const lines = rawText.split('\n');
-                const acquisitionMethods = ["Steam Store", "Complimentary", "Gift/Guest Pass", "Retail"];
-                const junkKeywords = ["Demo", "Soundtrack", "Playtest", "Pack", "DLC", "Bundle-only", "Texture", "Beta", "Test", "Server"];
+                const junkKeywords = ["Demo", "Soundtrack", "Playtest", "Pack", "DLC", "Bundle-only", "Texture", "Beta", "Test", "Server", "SDK", "Editor", "Kit"];
 
                 const gameTitles = lines.map(line => {
-                    let cleanedLine = line.trim().replace(/^[A-Za-z]{3}\s\d{1,2},\s\d{4}/, '').replace(/^Remove/, '');
-                    acquisitionMethods.forEach(method => {
-                        if (cleanedLine.endsWith(method)) {
-                            cleanedLine = cleanedLine.slice(0, -method.length);
+                    const parts = line.split('\t');
+                    // Check if the line has the expected tab-separated format
+                    if (parts.length >= 2) {
+                        let title = parts[1].trim();
+                        // Clean the "Remove" prefix more robustly
+                        if (title.startsWith('Remove')) {
+                           title = title.substring('Remove'.length).trim();
                         }
-                    });
-                    return cleanedLine.trim();
+                        return title;
+                    }
+                    return null; // Ignore lines that don't match the format
                 }).filter(title => {
+                    // Filter out nulls and titles containing junk keywords
                     return title && !junkKeywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()));
                 });
 
@@ -329,7 +333,8 @@
 
             function updateGameListAndWheel(filter = 'all') {
                 document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                document.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
+                const activeBtn = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+                if(activeBtn) activeBtn.classList.add('active');
 
                 if (filter === 'all') {
                     currentGames = [...allGames];
@@ -446,7 +451,17 @@
             });
 
             challengeBtn.addEventListener('click', () => {
-                const prompt = `You are a creative gaming assistant. For the video game "${selectedGameName}", generate 3 unique and fun gameplay challenges to make it more interesting. Present them as a simple numbered list with bold headings for each challenge. For example: **1. The Pacifist:** Try to win without...`;
+                const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+                let prompt = '';
+
+                if (activeFilter === '1') {
+                    prompt = `You are a creative gaming assistant. For the video game "${selectedGameName}", generate 3 unique and fun single-player gameplay challenges. Present them as a simple numbered list with bold headings for each challenge. For example: **1. Speedrunner:** Try to complete the main objective in under an hour.`;
+                } else if (activeFilter === '2') {
+                    prompt = `You are a creative gaming assistant. For the video game "${selectedGameName}", generate 3 unique and fun 2-player cooperative or competitive challenges. For each challenge, clearly define the goal for both players. Present them as a simple numbered list with bold headings. For example: **1. The Duo:** Player 1 can only use melee attacks, and Player 2 can only use ranged attacks. You must complete the level together.`;
+                } else { // 'all', '3', '4', '5+'
+                    prompt = `You are a creative gaming assistant. For the video game "${selectedGameName}", generate 3 unique and fun gameplay challenges that can be adapted for either 1 or 2 players. Present them as a simple numbered list with bold headings for each challenge. For example: **1. The Minimalist:** Try to win using only the starting equipment.`;
+                }
+                
                 callGemini(prompt);
             });
 
