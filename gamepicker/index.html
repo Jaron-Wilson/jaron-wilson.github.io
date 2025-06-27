@@ -175,10 +175,14 @@
             let tempParsedGames = []; // Store un-categorized games
 
             const defaultGames = [
-                { name: "Enshrouded", players: 5 }, { name: "Abiotic Factor", players: 5 }, { name: "Planet Coaster", players: 1 }, 
-                { name: "Super WorldBox", players: 1 }, { name: "Buckshot Roulette", players: 1 }, { name: "FTL: Faster Than Light", players: 1 }, 
-                { name: "Hacknet", players: 1 }, { name: "Friends vs Friends", players: 4 }, { name: "Among Us", players: 5 }, 
-                { name: "Content Warning", players: 4 }, { name: "Scrap Mechanic", players: 5 }, { name: "Rainbow Six Siege", players: 5 }
+                { name: "Enshrouded", maxPlayers: 5 }, { name: "Abiotic Factor", maxPlayers: 5 }, { name: "Planet Coaster", maxPlayers: 1 }, 
+                { name: "Super WorldBox", maxPlayers: 1 }, { name: "Buckshot Roulette", maxPlayers: 1 }, { name: "FTL: Faster Than Light", maxPlayers: 1 }, 
+                { name: "Hacknet", maxPlayers: 1 }, { name: "Friends vs Friends", maxPlayers: 4 }, { name: "Among Us", maxPlayers: 5 }, 
+                { name: "Content Warning", maxPlayers: 4 }, { name: "Scrap Mechanic", maxPlayers: 5 }, { name: "Rainbow Six Siege", maxPlayers: 5 },
+                { name: "HELLDIVERS™ 2", maxPlayers: 4 }, { name: "The Survivalists", maxPlayers: 4 }, { name: "Lethal Company", maxPlayers: 4 },
+                { name: "State of Decay 2", maxPlayers: 4 }, { name: "Risk of Rain 2", maxPlayers: 4 }, { name: "Grounded", maxPlayers: 4 },
+                { name: "ASTRONEER", maxPlayers: 4 }, { name: "Rain World", maxPlayers: 4 }, { name: "Stardew Valley", maxPlayers: 4 },
+                { name: "Left 4 Dead 2", maxPlayers: 5 }, { name: "Portal 2", maxPlayers: 2 }, { name: "Deep Rock Galactic", maxPlayers: 4 }
             ];
 
             let currentGames = [];
@@ -227,9 +231,9 @@
                                 type: "OBJECT",
                                 properties: {
                                     "name": { "type": "STRING" },
-                                    "players": { "type": "NUMBER" }
+                                    "maxPlayers": { "type": "NUMBER" }
                                 },
-                                required: ["name", "players"]
+                                required: ["name", "maxPlayers"]
                             }
                         }
                     }
@@ -308,7 +312,7 @@
                     return;
                 }
 
-                const prompt = `You are an expert in video games. I will provide you with a JSON array of game titles. Your task is to determine the maximum player count for each game and categorize it. The categories are: 1, 2, 3, 4, or 5 (for 5 or more players). For single-player only games, use 1. For games with local or online co-op/multiplayer, use the max player count. Please respond with a JSON array of objects, where each object has a "name" (the original game title) and a "players" (the category number). Here is the list of games: ${JSON.stringify(tempParsedGames)}`;
+                const prompt = `You are an expert in video games. I will provide you with a JSON array of game titles. Your task is to determine the maximum possible player count for each game. For single-player only games, use 1. For multiplayer games, use the highest possible number of players (e.g., for a 1-4 player game, use 4; for an MMO or game with more than 4 players, use 5 to represent '5 or more'). Please respond with a JSON array of objects, where each object has a "name" (the original game title) and a "maxPlayers" property with the maximum player number (1, 2, 3, 4, or 5). Here is the list of games: ${JSON.stringify(tempParsedGames)}`;
 
                 const categorizedGames = await callGemini(prompt, true);
                 
@@ -331,7 +335,7 @@
                     currentGames = [...allGames];
                 } else {
                     const playerCount = parseInt(filter, 10);
-                    currentGames = allGames.filter(game => playerCount < 5 ? game.players === playerCount : game.players >= 5);
+                    currentGames = allGames.filter(game => game.maxPlayers >= playerCount);
                 }
                 
                 currentRotation = 0;
