@@ -64,13 +64,27 @@
         <p class="text-lg text-gray-400">Let AI help you decide what to play!</p>
     </div>
 
+    <!-- Import Games Panel -->
+    <div class="w-full max-w-2xl p-4 bg-gray-800 rounded-lg mb-6 shadow-lg">
+        <h2 class="text-lg font-semibold text-center mb-3 text-indigo-300">Import Your Steam Library</h2>
+        <p class="text-sm text-gray-400 text-center mb-3">
+            Go to <a href="https://store.steampowered.com/account/licenses/" target="_blank" class="text-teal-400 hover:underline">your Steam licenses page</a>, copy the entire list (Ctrl+A, Ctrl+C), and paste it below.
+        </p>
+        <textarea id="steamListInput" rows="4" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Paste your game list here..."></textarea>
+        <div class="flex flex-col sm:flex-row gap-4 mt-3">
+             <button id="processListBtn" class="w-full sm:w-1/2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Process Pasted List</button>
+             <button id="categorizeBtn" class="w-full sm:w-1/2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors" disabled>✨ Categorize with AI</button>
+        </div>
+        <p id="processStatus" class="text-center text-sm text-green-400 mt-2 h-4"></p>
+    </div>
+
     <!-- AI Settings Panel -->
     <div class="w-full max-w-2xl p-4 bg-gray-800 rounded-lg mb-6 shadow-lg">
         <h2 class="text-lg font-semibold text-center mb-3 text-indigo-300">AI Settings</h2>
         <div class="flex flex-col sm:flex-row gap-4 items-end">
             <div class="w-full sm:flex-grow">
                 <label for="apiKeyInput" class="text-sm font-medium text-gray-400">Your Gemini API Key</label>
-                <input type="password" id="apiKeyInput" placeholder="Enter your API key to enable AI features" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" id="apiKeyInput" placeholder="Enter API key to use AI features" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <div class="w-full sm:w-auto">
                 <label for="modelSelector" class="text-sm font-medium text-gray-400">Model</label>
@@ -114,14 +128,12 @@
             <h2 class="text-2xl font-bold text-gray-300 mb-2">The wheel has chosen...</h2>
             <p id="resultText" class="text-4xl font-bold text-indigo-400 my-4"></p>
             
-            <!-- Gemini Features -->
             <div id="geminiFeaturesContainer" class="flex flex-col sm:flex-row gap-3 justify-center mt-4">
                 <button id="whyPlayBtn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">✨ Why should I play this?</button>
                 <button id="challengeBtn" class="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors">✨ Give me a challenge</button>
                 <button id="suggestBtn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">✨ Suggest a Similar Game</button>
             </div>
 
-            <!-- Gemini Response Area with Scrollbar -->
             <div id="geminiResponseContainer" class="mt-4 text-left bg-gray-700 p-4 rounded-lg hidden overflow-y-auto max-h-64">
                  <div id="loader" class="loader hidden"></div>
                  <div id="geminiResponse" class="text-gray-300 whitespace-pre-wrap"></div>
@@ -153,27 +165,23 @@
             const apiKeyInput = document.getElementById('apiKeyInput');
             const modelSelector = document.getElementById('modelSelector');
             const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-            const geminiFeaturesContainer = document.getElementById('geminiFeaturesContainer');
+            const steamListInput = document.getElementById('steamListInput');
+            const processListBtn = document.getElementById('processListBtn');
+            const categorizeBtn = document.getElementById('categorizeBtn');
+            const processStatus = document.getElementById('processStatus');
 
             // --- Game Data ---
-            const allGames = [
+            let allGames = [];
+            let tempParsedGames = []; // Store un-categorized games
+
+            const defaultGames = [
                 { name: "Enshrouded", players: 5 }, { name: "Abiotic Factor", players: 5 }, { name: "Planet Coaster", players: 1 }, 
                 { name: "Super WorldBox", players: 1 }, { name: "Buckshot Roulette", players: 1 }, { name: "FTL: Faster Than Light", players: 1 }, 
                 { name: "Hacknet", players: 1 }, { name: "Friends vs Friends", players: 4 }, { name: "Among Us", players: 5 }, 
-                { name: "Content Warning", players: 4 }, { name: "Scrap Mechanic", players: 5 }, { name: "Rainbow Six Siege", players: 5 }, 
-                { name: "HELLDIVERS™ 2", players: 4 }, { name: "Wallpaper Engine", players: 1 }, { name: "The Survivalists", players: 4 }, 
-                { name: "Lethal Company", players: 4 }, { name: "The Walking Dead", players: 1 }, { name: "Minecraft Legends", players: 5 }, 
-                { name: "State of Decay 2", players: 4 }, { name: "The Elder Scrolls Online", players: 5 }, { name: "Factorio", players: 5 }, 
-                { name: "Risk of Rain 2", players: 4 }, { name: "Grounded", players: 4 }, { name: "Oxygen Not Included", players: 1 }, 
-                { name: "BattleBit Remastered", players: 5 }, { name: "The Elder Scrolls V: Skyrim", players: 1 }, { name: "ASTRONEER", players: 4 }, 
-                { name: "Becastled", players: 1 }, { name: "Terraria", players: 5 }, { name: "Besiege", players: 1 }, 
-                { name: "Bad North", players: 1 }, { name: "Rain World", players: 4 }, { name: "Grand Theft Auto V", players: 5 }, 
-                { name: "Stardew Valley", players: 4 }, { name: "Left 4 Dead 2", players: 5 }, { name: "Portal 2", players: 2 }, 
-                { name: "Half-Life 2", players: 1 }, { name: "FortressCraft Evolved!", players: 5 }, { name: "Don't Starve Together", players: 5 }, 
-                { name: "Deep Rock Galactic", players: 4 }, { name: "Total Annihilation", players: 5 }, { name: "STAR WARS Saga", players: 5 }
+                { name: "Content Warning", players: 4 }, { name: "Scrap Mechanic", players: 5 }, { name: "Rainbow Six Siege", players: 5 }
             ];
 
-            let currentGames = [...allGames];
+            let currentGames = [];
             let selectedGameName = '';
             
             const colors = [ "#4f46e5", "#6366f1", "#818cf8", "#a5b4fc", "#c7d2fe", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#bbf7d0", "#d97706", "#f59e0b", "#facc15", "#fde047", "#fef08a"];
@@ -184,24 +192,48 @@
             // --- Gemini API & Markdown ---
             const markdownConverter = new showdown.Converter(); 
 
-            async function callGemini(prompt) {
+            async function callGemini(prompt, isCategorization = false) {
                 const apiKey = apiKeyInput.value;
                 const model = modelSelector.value;
                 
                 if (!apiKey) {
-                    geminiResponseContainer.style.display = 'block';
-                    geminiResponseEl.innerHTML = `<p class="text-red-400 font-semibold">Please enter your Gemini API key in the AI Settings section above to use this feature.</p>`;
-                    return;
+                    const statusEl = isCategorization ? processStatus : geminiResponseEl;
+                    const containerEl = isCategorization ? null : geminiResponseContainer;
+                    if(containerEl) containerEl.style.display = 'block';
+                    statusEl.innerHTML = `<p class="text-red-400 font-semibold">Please enter your Gemini API key in the AI Settings section to use this feature.</p>`;
+                    if(!isCategorization) loader.style.display = 'none';
+                    return null;
                 }
 
-                geminiResponseContainer.style.display = 'block';
-                geminiResponseEl.style.display = 'none';
-                loader.style.display = 'block';
+                if (!isCategorization) {
+                    geminiResponseContainer.style.display = 'block';
+                    geminiResponseEl.style.display = 'none';
+                    loader.style.display = 'block';
+                } else {
+                    processStatus.textContent = 'AI is categorizing, please wait...';
+                    categorizeBtn.disabled = true;
+                }
 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-                const payload = {
-                    contents: [{ role: "user", parts: [{ text: prompt }] }]
-                };
+                
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+                if(isCategorization) {
+                    payload.generationConfig = {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "name": { "type": "STRING" },
+                                    "players": { "type": "NUMBER" }
+                                },
+                                required: ["name", "players"]
+                            }
+                        }
+                    }
+                }
 
                 try {
                     const response = await fetch(apiUrl, {
@@ -217,21 +249,96 @@
                     const result = await response.json();
                     
                     if (result.candidates && result.candidates.length > 0) {
-                        const markdownText = result.candidates[0].content.parts[0].text;
-                        geminiResponseEl.innerHTML = markdownConverter.makeHtml(markdownText);
+                        const text = result.candidates[0].content.parts[0].text;
+                        if(isCategorization) {
+                            return JSON.parse(text);
+                        } else {
+                            geminiResponseEl.innerHTML = markdownConverter.makeHtml(text);
+                        }
                     } else {
-                        geminiResponseEl.textContent = 'Sorry, I could not get a response. Please try again.';
+                         throw new Error("No candidates returned from API.");
                     }
 
                 } catch (error) {
                     console.error("Gemini API call error:", error);
-                    geminiResponseEl.textContent = 'An error occurred while contacting the AI. Check the console for details.';
+                     if (isCategorization) {
+                        processStatus.textContent = 'AI categorization failed. Check console.';
+                    } else {
+                        geminiResponseEl.textContent = 'An error occurred while contacting the AI. Check the console for details.';
+                    }
+                    return null;
                 } finally {
-                    loader.style.display = 'none';
-                    geminiResponseEl.style.display = 'block';
+                    if (!isCategorization) {
+                        loader.style.display = 'none';
+                        geminiResponseEl.style.display = 'block';
+                    }
+                    categorizeBtn.disabled = false;
+                }
+            }
+            
+            // --- Game List Management ---
+            function parseSteamList() {
+                const rawText = steamListInput.value;
+                if (!rawText) return;
+
+                const lines = rawText.split('\n');
+                const acquisitionMethods = ["Steam Store", "Complimentary", "Gift/Guest Pass", "Retail"];
+                const junkKeywords = ["Demo", "Soundtrack", "Playtest", "Pack", "DLC", "Bundle-only", "Texture", "Beta", "Test", "Server"];
+
+                const gameTitles = lines.map(line => {
+                    let cleanedLine = line.trim().replace(/^[A-Za-z]{3}\s\d{1,2},\s\d{4}/, '').replace(/^Remove/, '');
+                    acquisitionMethods.forEach(method => {
+                        if (cleanedLine.endsWith(method)) {
+                            cleanedLine = cleanedLine.slice(0, -method.length);
+                        }
+                    });
+                    return cleanedLine.trim();
+                }).filter(title => {
+                    return title && !junkKeywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()));
+                });
+
+                tempParsedGames = [...new Set(gameTitles)]; // Remove duplicates
+                processStatus.textContent = `Found ${tempParsedGames.length} unique games! Ready to be categorized by AI.`;
+                categorizeBtn.disabled = false;
+            }
+            
+            async function categorizeWithAI() {
+                if(tempParsedGames.length === 0) {
+                    processStatus.textContent = 'Please process a list first.';
+                    return;
+                }
+
+                const prompt = `You are an expert in video games. I will provide you with a JSON array of game titles. Your task is to determine the maximum player count for each game and categorize it. The categories are: 1, 2, 3, 4, or 5 (for 5 or more players). For single-player only games, use 1. For games with local or online co-op/multiplayer, use the max player count. Please respond with a JSON array of objects, where each object has a "name" (the original game title) and a "players" (the category number). Here is the list of games: ${JSON.stringify(tempParsedGames)}`;
+
+                const categorizedGames = await callGemini(prompt, true);
+                
+                if (categorizedGames && categorizedGames.length > 0) {
+                    allGames = categorizedGames;
+                    localStorage.setItem('userGameList', JSON.stringify(allGames));
+                    processStatus.textContent = `Successfully categorized ${allGames.length} games!`;
+                    steamListInput.value = '';
+                    updateGameListAndWheel();
+                } else {
+                    processStatus.textContent = 'AI categorization failed. Using default list.';
                 }
             }
 
+            function updateGameListAndWheel(filter = 'all') {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
+
+                if (filter === 'all') {
+                    currentGames = [...allGames];
+                } else {
+                    const playerCount = parseInt(filter, 10);
+                    currentGames = allGames.filter(game => playerCount < 5 ? game.players === playerCount : game.players >= 5);
+                }
+                
+                currentRotation = 0;
+                canvas.style.transition = 'none';
+                canvas.style.transform = `rotate(0deg)`;
+                setCanvasSize();
+            }
 
             // --- Wheel Drawing and Spinning ---
             function drawWheel(size) {
@@ -273,7 +380,7 @@
                     ctx.rotate(angle + arcSize / 2);
                     ctx.textAlign = "right";
                     ctx.textBaseline = "middle";
-                    const fontSize = numSegments > 20 ? radius * 0.045 : radius * 0.06;
+                    const fontSize = numSegments > 40 ? radius * 0.035 : (numSegments > 20 ? radius * 0.045 : radius * 0.06);
                     ctx.font = `bold ${fontSize}px Poppins`; 
                     const text = currentGames[i].name;
                     ctx.fillText(text, radius - 15, 0);
@@ -323,26 +430,11 @@
             // --- Event Listeners & Settings Management ---
             filterContainer.addEventListener('click', (e) => {
                 if (e.target.tagName !== 'BUTTON') return;
-                const filter = e.target.dataset.filter;
-                
-                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-
-                if (filter === 'all') {
-                    currentGames = [...allGames];
-                } else {
-                    const playerCount = parseInt(filter, 10);
-                    if (playerCount < 5) {
-                        currentGames = allGames.filter(game => game.players === playerCount);
-                    } else {
-                        currentGames = allGames.filter(game => game.players >= 5);
-                    }
-                }
-                currentRotation = 0;
-                canvas.style.transition = 'none';
-                canvas.style.transform = `rotate(0deg)`;
-                setCanvasSize();
+                updateGameListAndWheel(e.target.dataset.filter);
             });
+            
+            processListBtn.addEventListener('click', parseSteamList);
+            categorizeBtn.addEventListener('click', categorizeWithAI);
 
             whyPlayBtn.addEventListener('click', () => {
                 const prompt = `You are a helpful and enthusiastic gaming assistant. A user has just landed on the game "${selectedGameName}" on a roulette wheel. Give them a short, exciting, one-paragraph summary of why they should play it right now. Focus on the core fun factor and what makes it unique.`;
@@ -404,7 +496,6 @@
             closeModalBtn.addEventListener('click', hideResult);
             saveSettingsBtn.addEventListener('click', saveSettings);
 
-            // --- Responsive Sizing ---
             function setCanvasSize() {
                 const container = document.querySelector('.wheel-container');
                 let size = Math.min(500, window.innerWidth - 40, window.innerHeight * 0.6);
@@ -424,8 +515,14 @@
             window.addEventListener('resize', setCanvasSize);
             
             // --- Initial Setup ---
+            const savedGames = localStorage.getItem('userGameList');
+            if (savedGames) {
+                allGames = JSON.parse(savedGames);
+            } else {
+                allGames = defaultGames;
+            }
             loadSettings();
-            setCanvasSize();
+            updateGameListAndWheel();
         });
     </script>
 </body>
