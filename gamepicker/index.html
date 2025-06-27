@@ -290,22 +290,19 @@
 
                 const gameTitles = lines.map(line => {
                     const parts = line.split('\t');
-                    // Check if the line has the expected tab-separated format
                     if (parts.length >= 2) {
                         let title = parts[1].trim();
-                        // Clean the "Remove" prefix more robustly
                         if (title.startsWith('Remove')) {
                            title = title.substring('Remove'.length).trim();
                         }
                         return title;
                     }
-                    return null; // Ignore lines that don't match the format
+                    return null;
                 }).filter(title => {
-                    // Filter out nulls and titles containing junk keywords
                     return title && !junkKeywords.some(keyword => title.toLowerCase().includes(keyword.toLowerCase()));
                 });
 
-                tempParsedGames = [...new Set(gameTitles)]; // Remove duplicates
+                tempParsedGames = [...new Set(gameTitles)];
                 processStatus.textContent = `Found ${tempParsedGames.length} unique games! Ready to be categorized by AI.`;
                 categorizeBtn.disabled = false;
             }
@@ -405,6 +402,24 @@
                 ctx.beginPath();
                 ctx.arc(radius, radius, radius * 0.12, 0, 2 * Math.PI);
                 ctx.fill();
+
+                // Draw game count in the center
+                const activeFilterBtn = document.querySelector('.filter-btn.active');
+                const filterLabel = activeFilterBtn ? activeFilterBtn.textContent : 'Games';
+                
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Adjust text based on size
+                const countFontSize = radius * 0.1;
+                const labelFontSize = radius * 0.06;
+
+                ctx.font = `bold ${countFontSize}px Poppins`;
+                ctx.fillText(currentGames.length, radius, radius - (labelFontSize / 2));
+                
+                ctx.font = `bold ${labelFontSize}px Poppins`;
+                ctx.fillText(filterLabel, radius, radius + (countFontSize / 2));
             }
 
             function spin() {
