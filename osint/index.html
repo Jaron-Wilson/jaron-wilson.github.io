@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT-Agent | Automated Intelligence Platform</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Roboto+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-dark: #121212;
+            --primary: #1e1e1e;
+            --secondary: #2c2c2c;
+            --accent: #03a9f4;
+            --text-light: #e0e0e0;
+            --text-medium: #b0b0b0;
+            --text-dark: #8d8d8d;
+            --border-color: #3a3a3a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+       .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px 0;
+        }
+
+        header {
+            background-color: var(--primary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 10px 0;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+       .logo {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+       .nav-links {
+            list-style: none;
+            display: flex;
+        }
+
+       .nav-links li {
+            margin-left: 25px;
+        }
+
+       .nav-links a {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+
+       .nav-links a:hover {
+            color: var(--accent);
+        }
+
+       .hero {
+            text-align: center;
+            padding: 100px 20px;
+            background: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070') no-repeat center center/cover;
+        }
+
+       .hero h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+       .hero p {
+            font-size: 1.2em;
+            max-width: 800px;
+            margin: auto;
+            color: var(--text-medium);
+        }
+
+        section {
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        section:last-of-type {
+            border-bottom: none;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 60px;
+            color: var(--accent);
+        }
+
+       .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+       .card {
+            background-color: var(--primary);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+       .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+       .card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+       .card p,.card li {
+            color: var(--text-medium);
+        }
+        
+       .card ul {
+            list-style-position: inside;
+            padding-left: 10px;
+        }
+
+        code, pre {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--secondary);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            padding: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+       .data-flow {
+            margin-top: 20px;
+        }
+       .data-flow-step {
+            background-color: var(--secondary);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid var(--accent);
+        }
+       .data-flow-step strong {
+            color: var(--text-light);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--primary);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-medium);
+        }
+
+        th {
+            background-color: var(--secondary);
+            color: var(--text-light);
+            font-weight: 700;
+        }
+
+        tbody tr:hover {
+            background-color: var(--secondary);
+        }
+        
+        td:first-child {
+            font-weight: bold;
+            color: var(--text-light);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            background-color: var(--primary);
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">OSINT-Agent</div>
+                <ul class="nav-links">
+                    <li><a href="#architecture">Architecture</a></li>
+                    <li><a href="#tooling">Tooling</a></li>
+                    <li><a href="#analysis">Analysis</a></li>
+                    <li><a href="#legal">Framework</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Automated Intelligence Analysis Platform</h1>
+            <p>A blueprint for an agent-based system designed to automate Open Source Intelligence (OSINT) gathering, analysis, and reporting. Leverage a modular, scalable, and resilient architecture to transform raw data into actionable insights.</p>
+        </section>
+
+        <section id="architecture">
+            <div class="container">
+                <h2>Architectural Blueprint</h2>
+                <div class="card-container">
+                    <div class="card">
+                        <h3>Orchestrator-Agent Model</h3>
+                        <p>A dual-component architecture separates strategic control from tactical execution. The central <strong>Orchestrator Agent</strong> acts as the "brain," managing investigations, while specialized <strong>Selector-Specific Agents</strong> (e.g., <code>phone_agent</code>, <code>email_agent</code>) perform focused tasks.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Iterative Data Flow</h3>
+                        <p>The system employs a closed-loop, iterative process. The Orchestrator dispatches tasks, aggregates results, identifies new selectors (leads), and generates new tasks, automatically deepening the investigation with each cycle.</p>
+                    </div>
+                    <div class="card">
+                        <h3>The Intelligence Graph</h3>
+                        <p>A graph database (like Neo4j) is used to model the complex web of relationships between entities. This structure allows for powerful analytical queries to uncover non-obvious connections, moving beyond simple data collection to automated insight generation.</p>
+                    </div>
+                </div>
+                <div class="data-flow">
+                    <h3 style="text-align: center; margin: 40px 0 20px;">Example Investigation Flow</h3>
+                    <div class="data-flow-step"><strong>1. Ingestion:</strong> User inputs initial selectors (name, phone numbers).</div>
+                    <div class="data-flow-step"><strong>2. Tasking (Cycle 1):</strong> Orchestrator creates and dispatches tasks to <code>name_agent</code> and <code>phone_agent</code>.</div>
+                    <div class="data-flow-step"><strong>3. Execution:</strong> Agents run pre-defined tool sequences concurrently.</div>
+                    <div class="data-flow-step"><strong>4. Aggregation:</strong> Agents return structured data (e.g., VoIP status, country code, potential email).</div>
+                    <div class="data-flow-step"><strong>5. Analysis & New Tasking (Cycle 2):</strong> Orchestrator finds new selector (email) and dispatches task to <code>email_agent</code>.</div>
+                    <div class="data-flow-step"><strong>6. Deeper Digging:</strong> <code>email_agent</code> finds associated username from data breach check.</div>
+                    <div class="data-flow-step"><strong>7. Final Tasking (Cycle 3):</strong> Orchestrator dispatches username to <code>username_agent</code>.</div>
+                    <div class="data-flow-step"><strong>8. Report Generation:</strong> Investigation cycle completes. Orchestrator synthesizes all data from the Intelligence Graph into a final report.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tooling">
+            <div class="container">
+                <h2>Tooling & Integration</h2>
+                <p style="text-align:center; max-width: 800px; margin: -40px auto 60px; color: var(--text-medium);">Agents are programmed with investigative tradecraft, prioritizing tools with APIs or CLI access and classifying them by their operational security (OPSEC) risk.</p>
+                
+                <h3>Automation Feasibility Matrix</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tool Name</th>
+                            <th>Function</th>
+                            <th>Selector Type</th>
+                            <th>OPSEC Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>OSINT Industries</td>
+                            <td>Comprehensive Profile</td>
+                            <td>Phone, Email, User</td>
+                            <td>Passive</td>
+                        </tr>
+                        <tr>
+                            <td>Epieos</td>
+                            <td>Reverse Lookup</td>
+                            <td>Phone, Email</td>
+                            <td>Passive</td>
+                        </tr>
+                        <tr>
+                            <td>IPQS</td>
+                            <td>Phone Validation</td>
+                            <td>Phone</td>
+                            <td>Passive</td>
+                        </tr>
+                        <tr>
+                            <td>Truecaller</td>
+                            <td>Reverse Phone Lookup</td>
+                            <td>Phone</td>
+                            <td>Contributory</td>
+                        </tr>
+                        <tr>
+                            <td>HaveIBeenPwned</td>
+                            <td>Data Breach Check</td>
+                            <td>Email</td>
+                            <td>Passive</td>
+                        </tr>
+                        <tr>
+                            <td>WhatsMyName</td>
+                            <td>Username Search</td>
+                            <td>Username</td>
+                            <td>Passive</td>
+                        </tr>
+                        <tr>
+                            <td>Google Dorking</td>
+                            <td>General Search</td>
+                            <td>All</td>
+                            <td>Passive</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="analysis">
+            <div class="container">
+                <h2>Automated Analysis & Reporting</h2>
+                <div class="card-container">
+                    <div class="card">
+                        <h3>Heuristic Engine</h3>
+                        <p>A rules-based engine codifies investigative intuition. It scans the Intelligence Graph for "red flags" like geographical deception (U.S. VoIP number + Nigerian mobile number) or suspicious alias associations (name linked to public financial crimes).</p>
+                    </div>
+                    <div class="card">
+                        <h3>"Scam Likelihood" Score</h3>
+                        <p>A weighted scoring model calculates risk. Correlated flags (e.g., VoIP number AND high-risk country code) receive a significantly higher score than the sum of their individual parts, providing a more accurate assessment of intent.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Dynamic Report Generation</h3>
+                        <p>The system synthesizes all findings into a structured report, including an executive summary, a breakdown of red flags, detailed raw data, a graph visualization of connections, and a complete audit trail of the investigation.</p>
+                    </div>
+                </div>
+                <h3 style="text-align: center; margin: 40px 0 20px;">Sample Scoring Rubric</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag Category</th>
+                            <th>Description</th>
+                            <th>Sample Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Geographical Deception</td>
+                            <td>U.S. VoIP number + Nigerian mobile number.</td>
+                            <td>+40</td>
+                        </tr>
+                        <tr>
+                            <td>Suspicious Alias</td>
+                            <td>Name linked to public financial crime cases.</td>
+                            <td>+25</td>
+                        </tr>
+                        <tr>
+                            <td>High-Risk Country</td>
+                            <td>Number from a country known for online fraud.</td>
+                            <td>+15</td>
+                        </tr>
+                        <tr>
+                            <td>High-Risk Area Code</td>
+                            <td>U.S. number from an area code known for spam.</td>
+                            <td>+10</td>
+                        </tr>
+                        <tr>
+                            <td>VoIP Number Usage</td>
+                            <td>Use of a location-masking VoIP number.</td>
+                            <td>+5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="legal">
+            <div class="container">
+                <h2>Legal, Ethical & OPSEC Framework</h2>
+                <p style="text-align:center; max-width: 800px; margin: -40px auto 60px; color: var(--text-medium);">The platform is built on a foundation of responsible use, incorporating legal compliance, ethical boundaries, and robust operational security.</p>
+                <div class="card-container">
+                    <div class="card">
+                        <h3>Legal Landscape</h3>
+                        <p>The system is designed to strictly use <strong>publicly available information</strong>. Agents respect platform Terms of Service with rate-limiting, and all data is sourced to ensure provenance for legal justification.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Ethical Boundaries</h3>
+                        <p>A "case management" paradigm isolates investigation data. Automated data retention and destruction policies are implemented to avoid indefinite storage of sensitive personal information, adhering to the principle of data minimization.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Operational Security (OPSEC)</h3>
+                        <p>All system traffic is anonymized via VPN or Tor. The system is aware of "contributory" tools that might alert a target. Containerization (Docker) sandboxes each component, enhancing security and preventing system-wide compromise.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 OSINT-Agent. All Rights Reserved. For research and authorized investigations only.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
