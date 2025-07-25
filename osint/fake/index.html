@@ -187,6 +187,67 @@
             margin-top: 3rem;
         }
 
+        /* Popup styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .popup-content {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 1.25rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 90%;
+            width: 450px;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Springy effect */
+            border: 2px solid #fca5a5; /* Red border for urgency */
+        }
+        .popup-overlay.show .popup-content {
+            transform: scale(1);
+        }
+        .popup-content h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #dc2626; /* Red for warning */
+            margin-bottom: 1rem;
+        }
+        .popup-content p {
+            font-size: 1.15rem;
+            color: #4a5568;
+            margin-bottom: 2rem;
+        }
+        .popup-close-btn {
+            background-color: #ef4444;
+            color: white;
+            padding: 0.9rem 1.75rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out, transform 0.1s ease-in-out;
+            font-weight: 700;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .popup-close-btn:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .header {
@@ -262,6 +323,18 @@
         </section>
     </main>
 
+    <!-- Popup Overlay -->
+    <div id="popupOverlay" class="popup-overlay">
+        <div class="popup-content">
+            <h3>Important Notification!</h3>
+            <p>
+                We've detected unusual activity. Please close this message to continue.
+                This is a security measure.
+            </p>
+            <button id="closePopupBtn" class="popup-close-btn">Close</button>
+        </div>
+    </div>
+
     <footer>
         <p>&copy; 2025 OSINT Lookup Hub. All rights reserved.</p>
         <p>456 Data Street, Info City, CA 90210</p>
@@ -272,6 +345,8 @@
             const emailInput = document.getElementById('emailInput');
             const lookupButton = document.getElementById('lookupButton');
             const lookupResultsDiv = document.getElementById('lookup-results');
+            const popupOverlay = document.getElementById('popupOverlay');
+            const closePopupBtn = document.getElementById('closePopupBtn');
 
             // Sample data mapping emails to names and numbers
             const osintData = {
@@ -282,6 +357,8 @@
                 "test@example.com": { name: "Test User", phone: "+1 (555) 000-0000" }
             };
 
+            const POPUP_DELAY = 2000; // 2 seconds delay before popup appears
+
             lookupButton.addEventListener('click', () => {
                 const emailQuery = emailInput.value.toLowerCase().trim();
                 lookupResultsDiv.innerHTML = '<div class="loading-spinner"></div><p class="text-gray-600">Searching...</p>'; // Show loading spinner
@@ -291,10 +368,22 @@
                     return;
                 }
 
-                // Simulate network delay for lookup
+                // Simulate network delay and then show popup
                 setTimeout(() => {
-                    const result = osintData[emailQuery];
+                    popupOverlay.classList.add('show'); // Show the popup
+                    console.log('Popup displayed.');
+                }, POPUP_DELAY);
+            });
 
+            closePopupBtn.addEventListener('click', () => {
+                popupOverlay.classList.remove('show'); // Hide the popup
+                console.log('Popup closed.');
+
+                const emailQuery = emailInput.value.toLowerCase().trim();
+                const result = osintData[emailQuery];
+
+                // Now display the actual lookup results after popup is closed
+                setTimeout(() => {
                     if (result) {
                         lookupResultsDiv.innerHTML = `
                             <p><strong>Name:</strong> ${result.name}</p>
@@ -303,7 +392,7 @@
                     } else {
                         lookupResultsDiv.innerHTML = '<p class="no-results">No information found for this email.</p>';
                     }
-                }, 1500); // Simulate a 1.5 second lookup time
+                }, 500); // Small delay before showing results after popup closes
             });
 
             // Allow lookup with Enter key
@@ -316,5 +405,3 @@
     </script>
 </body>
 </html>
-
-  
