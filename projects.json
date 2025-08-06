@@ -13,5 +13,10 @@
     "title": "Visualizer Integration",
     "description": "An interactive tool for visualizing integrations in real time.",
     "link": "https://ja-ron.live/integrations/visualizer/"
+  },
+  {
+    "title": "Cool Website",
+    "description": "A cool website with a matrix-style animation.",
+    "link": "/cool-website/"
   }
 ]
