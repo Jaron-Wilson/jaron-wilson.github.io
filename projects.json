@@ -2,21 +2,25 @@
   {
     "title": "Pokemon Integrations Report Visualizer",
     "description": "An interactive tool for visualizing integrations in real time.",
-    "link": "/integrations/visualizer/"
+    "link": "/integrations/visualizer/",
+    "visible": true
   },
   {
     "title": "Doc Editor",
     "description": "A lightweight document editor.",
-    "link": "/doc/"
+    "link": "/doc/",
+    "visible": true
   },
   {
     "title": "Blokus AI",
     "description": "A powerful AI designed to play the game of Blokus with strategic decision-making capabilities.",
-    "link": "https://jaronwilson.dev/Blokus-ai/"
+    "link": "https://jaronwilson.dev/Blokus-ai/",
+    "visible": true
   },
   {
     "title": "Local AI Server",
     "description": "A self-hosted AI model server that allows local processing for privacy-focused applications.",
-    "link": "https://jaronwilson.dev/local-ai-server/"
+    "link": "https://jaronwilson.dev/local-ai-server/",
+    "visible": true
   }
 ]

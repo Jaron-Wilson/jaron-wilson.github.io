@@ -4,27 +4,31 @@
     "tagline": "Personal finance, encrypted in your own Google Drive",
     "description": "Balances and transactions are encrypted in the browser before they ever leave it. The server never holds a copy. Passkey sign-in, no passwords.",
     "link": "https://finance.jaronwilson.dev/",
-    "domain": "finance.jaronwilson.dev"
+    "domain": "finance.jaronwilson.dev",
+    "visible": true
   },
   {
     "title": "Ingenious",
     "tagline": "The tile-matching board game, playable online",
     "description": "Build lines of matching symbols and keep all six colours moving. Your score is only as good as your weakest one. Solo and multiplayer boards.",
     "link": "https://ingenious.jaronwilson.dev/",
-    "domain": "ingenious.jaronwilson.dev"
+    "domain": "ingenious.jaronwilson.dev",
+    "visible": true
   },
   {
     "title": "Costa Rica Missions Trip",
     "tagline": "Non-profit donation platform",
     "description": "A serverless payment portal on Cloudflare Workers and the Stripe API, taking secure donations straight to a charity with zero infrastructure cost.",
     "link": "https://costaricamissiontrip.org/",
-    "domain": "costaricamissiontrip.org"
+    "domain": "costaricamissiontrip.org",
+    "visible": true
   },
   {
     "title": "ShiftSync AI",
     "tagline": "Smart scheduling, powered by AI",
     "description": "Managers generate schedules with AI. Employees manage their own shifts, trade with each other, and request time off.",
     "link": "https://shiftsync.work/",
-    "domain": "shiftsync.work"
+    "domain": "shiftsync.work",
+    "visible": true
   }
 ]

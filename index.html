@@ -157,7 +157,7 @@
     .then(r => r.json())
     .then(items => {
       const list = document.getElementById('live-list');
-      items.forEach(item => {
+      items.filter(item => item.visible !== false).forEach(item => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -174,7 +174,7 @@
     .then(r => r.json())
     .then(items => {
       const list = document.getElementById('project-list');
-      items.forEach(item => {
+      items.filter(item => item.visible !== false).forEach(item => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
