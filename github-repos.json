@@ -19,17 +19,6 @@
     "updated": "2026-09-03"
   },
   {
-    "name": "My-Local-Advanced-Ai",
-    "description": "",
-    "language": "Python",
-    "visibility": "public",
-    "link": "https://github.com/Jaron-Wilson/My-Local-Advanced-Ai",
-    "fork": false,
-    "archived": false,
-    "visible": true,
-    "updated": "2025-08-06"
-  },
-  {
     "name": "streamdeck",
     "description": "",
     "language": "Python",
@@ -52,6 +41,39 @@
     "updated": "2025-07-08"
   },
   {
+    "name": "VolleyBallPredictions",
+    "description": "Given a csv file of previous games, predict who will win with team 1 vs team 2",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/VolleyBallPredictions",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2024-11-06"
+  },
+  {
+    "name": "WorkoutApp",
+    "description": "My workout Challenge app",
+    "language": "HTML",
+    "visibility": "public",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "link": "https://github.com/Jaron-Wilson/WorkoutApp",
+    "updated": "2026-01-25"
+  },
+  {
+    "name": "Blokus-ai",
+    "description": "Creating a blokus ai that can play 4 players and win?",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/Blokus-ai",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2024-12-12"
+  },
+  {
     "name": "minecraft-gpt-god-plugin",
     "description": "When this came out I wanted this all local ai, thats what i did and i want to publish it now!",
     "language": "Java",
@@ -64,6 +86,17 @@
     "updated": "2025-04-02"
   },
   {
+    "name": "My-Local-Advanced-Ai",
+    "description": "",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/My-Local-Advanced-Ai",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2025-08-06"
+  },
+  {
     "name": "playmat",
     "description": "",
     "language": "",
@@ -73,17 +106,6 @@
     "archived": false,
     "visible": true,
     "updated": "2025-03-31"
-  },
-  {
-    "name": "VolleyBallPredictions",
-    "description": "Given a csv file of previous games, predict who will win with team 1 vs team 2",
-    "language": "Python",
-    "visibility": "public",
-    "link": "https://github.com/Jaron-Wilson/VolleyBallPredictions",
-    "fork": false,
-    "archived": false,
-    "visible": true,
-    "updated": "2024-11-06"
   },
   {
     "name": "Supermat",
@@ -106,28 +128,6 @@
     "archived": false,
     "visible": true,
     "updated": "2025-03-02"
-  },
-  {
-    "name": "Blokus-ai",
-    "description": "Creating a blokus ai that can play 4 players and win?",
-    "language": "",
-    "visibility": "public",
-    "link": "https://github.com/Jaron-Wilson/Blokus-ai",
-    "fork": false,
-    "archived": false,
-    "visible": true,
-    "updated": "2024-12-12"
-  },
-  {
-    "name": "WorkoutApp",
-    "description": "My workout Challenge app",
-    "language": "HTML",
-    "visibility": "public",
-    "fork": false,
-    "archived": false,
-    "visible": true,
-    "link": "https://github.com/Jaron-Wilson/WorkoutApp",
-    "updated": "2026-01-25"
   },
   {
     "name": "odysseus",
