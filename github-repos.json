@@ -24,7 +24,7 @@
     "visibility": "private",
     "fork": false,
     "archived": false,
-    "visible": true
+    "visible": false
   },
   {
     "name": "JaronDynamics",
@@ -51,16 +51,17 @@
     "visibility": "private",
     "fork": false,
     "archived": false,
-    "visible": true
+    "visible": false
   },
   {
     "name": "WorkoutApp",
     "description": "My workout Challenge app",
     "language": "HTML",
-    "visibility": "private",
+    "visibility": "public",
     "fork": false,
     "archived": false,
-    "visible": true
+    "visible": true,
+    "link": "https://github.com/Jaron-Wilson/WorkoutApp"
   },
   {
     "name": "llm-chat-app-template",
