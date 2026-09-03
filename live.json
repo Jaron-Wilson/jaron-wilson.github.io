@@ -5,5 +5,12 @@
     "description": "Balances and transactions are encrypted in the browser before they ever leave it. The server never holds a copy — passkey sign-in, no passwords.",
     "link": "https://finance.jaronwilson.dev/",
     "domain": "finance.jaronwilson.dev"
+  },
+  {
+    "title": "Ingenious",
+    "tagline": "The tile-matching board game, playable online",
+    "description": "Build lines of matching symbols and keep all six colours moving — your score is only as good as your weakest one. Solo and multiplayer boards.",
+    "link": "https://ingenious.jaronwilson.dev/",
+    "domain": "ingenious.jaronwilson.dev"
   }
 ]
