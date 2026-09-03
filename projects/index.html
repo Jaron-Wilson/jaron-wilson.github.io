@@ -1,0 +1,232 @@
+---
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Every repository Jaron Wilson has built, public and private.">
+<title>All Projects — Jaron Wilson</title>
+<link rel="canonical" href="{{ site.url }}/projects/">
+<meta property="og:title" content="All Projects — Jaron Wilson">
+<meta property="og:description" content="Every repository I've built, public and private.">
+<meta property="og:url" content="{{ site.url }}/projects/">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #faf8f4;
+    --surface: #ffffff;
+    --ink: #1a1a17;
+    --muted: #6b6862;
+    --border: #e8e4dc;
+    --accent: #b3542b;
+    --accent-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #17150f;
+      --surface: #201d16;
+      --ink: #ede9e0;
+      --muted: #a39d8f;
+      --border: #35322a;
+      --accent: #d97a4a;
+      --accent-ink: #1a1109;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.65;
+  }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -0.01em; margin: 0; font-optical-sizing: none; font-variation-settings: "opsz" 72; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; padding-block: 16px; flex-wrap: wrap; gap: 10px; }
+  nav .brand { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.15rem; color: var(--ink); font-optical-sizing: none; font-variation-settings: "opsz" 72; }
+  nav .links { display: flex; gap: 22px; flex-wrap: wrap; font-size: .92rem; }
+  nav .links a { color: var(--muted); }
+  nav .links a:hover { color: var(--ink); text-decoration: none; }
+  nav .links a.social { color: var(--accent); font-weight: 500; }
+
+  header.hero { padding: 72px 0 44px; border-bottom: 1px solid var(--border); }
+  header.hero .eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 14px; }
+  header.hero h1 { font-size: clamp(2rem, 4.4vw, 2.7rem); line-height: 1.1; max-width: 20ch; }
+  header.hero p.lede { font-size: 1.05rem; color: var(--muted); max-width: 56ch; margin-top: 16px; }
+
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 22px 0; border-bottom: 1px solid var(--border);
+  }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filters button {
+    font: inherit; font-size: .82rem; font-weight: 500; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer; transition: color .15s ease, border-color .15s ease;
+  }
+  .filters button:hover { color: var(--ink); }
+  .filters button.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .count { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+
+  .repo-list { padding: 8px 0 64px; display: flex; flex-direction: column; }
+  .repo {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 18px;
+    padding: 16px 4px; border-bottom: 1px solid var(--border);
+  }
+  .repo-main { min-width: 0; }
+  .repo-name-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .repo h3 { font-size: 1.02rem; font-family: "Inter", sans-serif; font-weight: 600; }
+  .repo h3 a { color: var(--ink); }
+  .repo p { margin: 4px 0 0; font-size: .88rem; color: var(--muted); max-width: 62ch; }
+  .repo p.empty { font-style: italic; opacity: .7; }
+  .tag {
+    display: inline-block; font-size: .68rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted);
+  }
+  .tag.private { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+  .repo-meta { flex-shrink: 0; text-align: right; font-size: .8rem; color: var(--muted); white-space: nowrap; }
+  .repo-meta .lang { display: block; }
+  .repo-meta .lang::before { content: "●"; color: var(--accent); margin-right: 5px; font-size: .7em; }
+
+  .empty-state { padding: 40px 4px; color: var(--muted); font-size: .92rem; }
+
+  .note {
+    margin-top: 28px; padding: 14px 18px; border: 1px dashed var(--border); border-radius: 8px;
+    font-size: .84rem; color: var(--muted);
+  }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0 40px; }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: .82rem; color: var(--muted); }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/" style="text-decoration:none;">Jaron Wilson</a>
+    <div class="links">
+      <a href="/#live">Live Software</a>
+      <a href="/#projects">Projects</a>
+      <a href="/projects/">All Projects</a>
+      <a href="/#about">About</a>
+      <a href="/#contact">Contact</a>
+      <a class="social" href="https://github.com/Jaron-Wilson" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Full list</div>
+    <h1>Every repository I've built.</h1>
+    <p class="lede">Public and private, active and abandoned. The featured builds live on the home page; this is everything else, straight from GitHub.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="filters" id="filters">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="public">Public</button>
+      <button data-filter="private">Private</button>
+      <button data-filter="original">Original (not forks)</button>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="repo-list" id="repo-list"></div>
+
+  <p class="note">This list is maintained by hand from my GitHub, not pulled live — a static site can't authenticate to GitHub's API to read private repos without exposing a token in the page, so I keep the list current myself instead. It reflects one page of my repos as of the last update; if something's missing, it hasn't been added yet.</p>
+</div>
+
+<script>
+  fetch('/github-repos.json')
+    .then(r => r.json())
+    .then(repos => {
+      const visible = repos.filter(r => r.visible !== false);
+      const list = document.getElementById('repo-list');
+      const count = document.getElementById('count');
+      const filterBar = document.getElementById('filters');
+      let active = 'all';
+
+      function matches(repo, filter) {
+        if (filter === 'all') return true;
+        if (filter === 'public') return repo.visibility === 'public';
+        if (filter === 'private') return repo.visibility === 'private';
+        if (filter === 'original') return !repo.fork;
+        return true;
+      }
+
+      function render() {
+        const shown = visible.filter(r => matches(r, active));
+        list.innerHTML = '';
+        if (shown.length === 0) {
+          list.innerHTML = '<p class="empty-state">Nothing matches this filter.</p>';
+        }
+        shown.forEach(repo => {
+          const row = document.createElement('div');
+          row.className = 'repo';
+          const nameHtml = repo.visibility === 'public' && repo.link
+            ? `<a href="${repo.link}" target="_blank" rel="noopener">${repo.name}</a>`
+            : repo.name;
+          const tags = [
+            repo.visibility === 'private' ? '<span class="tag private">Private</span>' : '<span class="tag">Public</span>',
+            repo.fork ? '<span class="tag">Fork</span>' : '',
+            repo.archived ? '<span class="tag">Archived</span>' : '',
+          ].join('');
+          const desc = repo.description
+            ? repo.description
+            : (repo.fork && repo.forkedFrom ? `Fork of ${repo.forkedFrom}.` : '');
+          row.innerHTML = `
+            <div class="repo-main">
+              <div class="repo-name-row">
+                <h3>${nameHtml}</h3>
+                ${tags}
+              </div>
+              <p class="${desc ? '' : 'empty'}">${desc || 'No description yet.'}</p>
+            </div>
+            <div class="repo-meta">
+              ${repo.language ? `<span class="lang">${repo.language}</span>` : ''}
+            </div>
+          `;
+          list.appendChild(row);
+        });
+        count.textContent = `${shown.length} repositor${shown.length === 1 ? 'y' : 'ies'}`;
+      }
+
+      filterBar.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-filter]');
+        if (!btn) return;
+        active = btn.dataset.filter;
+        [...filterBar.querySelectorAll('button')].forEach(b => b.classList.toggle('active', b === btn));
+        render();
+      });
+
+      render();
+    });
+</script>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; 2026 Jaron Wilson.</span>
+    <a href="/sitemap.xml">Sitemap</a>
+  </div>
+</footer>
+
+</body>
+</html>

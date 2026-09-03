@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joshua 3: Following the Ark</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#1e3a8a', // Deep Navy Blue
+                        'secondary-gold': '#f59e0b', // Accent Gold/Amber
+                        'background-light': '#fefcf8', // Near-White Cream
+                        'text-dark': '#374151', // Dark Gray
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styling for a smooth, readable experience */
+        body {
+            background-color: #e5e7eb; /* Light gray background */
+            font-family: 'Inter', sans-serif;
+        }
+        .discussion-card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4, 6, 0.05);
+        }
+        .question-block {
+            border-left: 4px solid theme('colors.secondary-gold');
+            background-color: #f9fafb; /* Lighter background for question */
+            transition: transform 0.2s;
+        }
+        .question-block:hover {
+            transform: translateY(-2px);
+        }
+        .answer-key-content-wrapper {
+            /* This is the container that becomes visible after PIN is correct */
+            border: 2px solid theme('colors.secondary-gold');
+            background-color: theme('colors.background-light');
+        }
+        .key-header {
+            background-color: theme('colors.primary-blue');
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8 flex justify-center items-start">
+
+    <!-- Main Content Container -->
+    <div class="w-full max-w-4xl discussion-card rounded-xl p-6 sm:p-10 lg:p-12 mt-4">
+        
+        <!-- Header -->
+        <header class="text-center mb-6 pb-4">
+            <p class="text-sm font-semibold uppercase tracking-widest text-secondary-gold">Joshua Chapter 3</p>
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-primary-blue mt-2">
+                Following the Ark
+            </h1>
+            <p class="text-lg text-text-dark mt-2">A Discussion Guide for Bible Study</p>
+        </header>
+
+        <!-- Facilitator Key Button and PIN Input -->
+        <div id="pinControlContainer" class="flex flex-col items-center justify-center mb-8 border-b-2 border-secondary-gold/50 pb-6 min-h-[70px]">
+            <button id="showKeyButton" onclick="showPinInput()" class="px-6 py-2 bg-primary-blue text-white font-bold rounded-lg shadow-lg hover:bg-primary-blue/90 transition duration-300">
+                Key
+            </button>
+            
+            <div id="pinInputContainer" class="hidden flex items-center space-x-3">
+                <input type="password" id="pinInput" placeholder="Enter PIN (key here nothing)" class="w-40 px-3 py-2 border border-secondary-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-gold/50 text-center">
+                <button onclick="checkPin()" class="px-4 py-2 bg-secondary-gold text-primary-blue font-bold rounded-lg shadow-md hover:bg-secondary-gold/90 transition duration-300">
+                    Unlock
+                </button>
+                <button onclick="hidePinInput()" class="px-3 py-2 text-text-dark/70 hover:text-text-dark transition duration-300">
+                    Cancel
+                </button>
+            </div>
+            <p id="pinError" class="hidden text-sm text-red-600 font-semibold mt-2"></p>
+        </div>
+        
+        <!-- Answer Key Section (The Wrapper is always visible after unlock, but content is hidden until 'View' is clicked) -->
+        <div id="answerKeyWrapper" class="hidden mb-10 p-4 rounded-xl answer-key-content-wrapper overflow-x-auto">
+            <!-- Key Content starts here and is hidden by default -->
+            <div id="answerKeyContent" class="hidden">
+                <h2 class="key-header text-white text-2xl font-bold p-4 rounded-t-lg -m-4 mb-4 text-center">
+                    FACILITATOR'S ANSWER KEY
+                </h2>
+
+                <h3 class="text-xl font-bold text-secondary-gold mb-2 mt-4 border-b border-secondary-gold/50 pb-1">I. Overall Theme of Joshua 3</h3>
+                <p class="mb-4 text-text-dark italic">
+                    The overarching theme of Joshua 3 is: <strong>Transitioning into God's Promise requires Consecration, Obedience, and a Singular Focus on God's Presence.</strong>
+                </p>
+
+                <h3 class="text-xl font-bold text-secondary-gold mb-4 mt-6 border-b border-secondary-gold/50 pb-1">II. Question by Question Takeaways</h3>
+
+                <!-- Q1 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q1 (Departure from Shittim):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> Beginning a new chapter with God requires <strong>separation and consecration</strong>. God demands purity and a clear break from past sins before moving into the inheritance he has prepared.
+                    </p>
+                </div>
+                
+                <!-- Q2 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q2 (Preparation/Officers):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> God is a God of <strong>order and purpose</strong>. While miracles require faith, they often happen within an ordered framework. The "army of God" must be ready, organized, and prepared to move when God commands.
+                    </p>
+                </div>
+
+                <!-- Q3 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q3 (Holiness/Distance):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> The distance emphasized the <strong>absolute holiness of God</strong> and the <strong>sinfulness of humanity</strong>. The presence of God could not be approached casually without purification, teaching reverence and awe.
+                    </p>
+                </div>
+
+                <!-- Q4 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q4 (Trust/Distance):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> It teaches <strong>singular focus and blind obedience</strong>. Their trust was placed <em>entirely</em> on God's presence, not on their sight or human reasoning.
+                    </p>
+                </div>
+                
+                <!-- Q5 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q5 (Action/Overflowing Water):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> <strong>Faith precedes the miracle.</strong> God required an act of terrifying obedience—taking the first step into the current—<em>before</em> His power was demonstrated.
+                    </p>
+                </div>
+
+                <!-- Q6 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q6 (Stillness):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> The priests had to <strong>stand still</strong> where God placed them. This teaches <strong>dependence</strong>—we rely on God to hold back the obstacles (the water), not on our strength to overcome them.
+                    </p>
+                </div>
+
+                <!-- Q7 -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100">
+                    <p class="font-semibold text-primary-blue">Q7 (Conclusion/Grace):</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Key Takeaway:</strong> Christ became our "Ark"—His sacrifice fulfilled the need for separation, allowing us to <strong>"Draw near to find mercy"</strong> (Hebrews 4:16). The distance in Joshua 3 shows us what we <em>deserved</em>, making the <strong>intimacy</strong> we now have incredibly precious.
+                    </p>
+                </div>
+
+                <!-- Personal Application -->
+                <div class="mb-5 p-3 rounded-lg bg-gray-100 border-t-2 border-primary-blue/50">
+                    <p class="font-semibold text-primary-blue">Personal Application:</p>
+                    <p class="text-sm text-text-dark mt-1">
+                        <strong>Sample Answer/Focus:</strong> Drawing near in practice looks like intentionally dedicating time to prayer and Bible reading, or actively confessing known sin without fear, trusting that Christ's work has made the connection <em>close</em>. It means responding to obstacles (overflowing rivers) by stepping forward in faith rather than retreating in fear.
+                    </p>
+                </div>
+            </div>
+            <!-- End of Key Content -->
+        </div>
+
+        <!-- Discussion Guide Content (The main site) -->
+        <div id="discussionGuideSection">
+            <!-- Section I -->
+            <section class="mb-10">
+                <h2 class="text-2xl sm:text-3xl font-bold text-primary-blue mb-4 flex items-center">
+                    <span class="mr-3 text-secondary-gold">1.</span> Setting the Scene: The Significance of Shittim (vs. 1-2)
+                </h2>
+                <p class="mb-6 text-text-dark leading-relaxed">
+                    Your notes highlight a key detail: Israel was moving away from <strong>Shittim</strong>, a place historically known for sin (Numbers 25).
+                </p>
+
+                <div class="question-block p-4 rounded-lg mb-4">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 1 (Departure):</p>
+                    <p class="text-text-dark">What does it signify that God had Israel's first official act under Joshua be a move away from a place known for sin? What does this tell us about beginning a new chapter with God?</p>
+                </div>
+
+                <div class="question-block p-4 rounded-lg mb-6">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 2 (Preparation):</p>
+                    <p class="text-text-dark">What does the action of the <strong>officers going through the camp</strong> (showing the <strong>"army of God"</strong>) suggest about God's plan? Why is organization necessary for a spiritual journey or "quest"?</p>
+                </div>
+            </section>
+            
+            <!-- Divider -->
+            <hr class="border-secondary-gold/50 mb-10">
+
+            <!-- Section II -->
+            <section class="mb-10">
+                <h2 class="text-2xl sm:text-3xl font-bold text-primary-blue mb-4 flex items-center">
+                    <span class="mr-3 text-secondary-gold">2.</span> The Tension of Distance: Separation vs. Nearness (vs. 3-4)
+                </h2>
+                <p class="mb-6 text-text-dark leading-relaxed">
+                    The mandate: follow the <strong>Ark</strong> (God's Presence), but maintain a significant <strong>distance</strong>—enough so it was the "only thing to focus on," requiring them to "Follow blindly."
+                </p>
+
+                <div class="question-block p-4 rounded-lg mb-4">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 3 (Holiness):</p>
+                    <p class="text-text-dark">The Ark represented holiness. Why was a physical <strong>"Distance for holiness"</strong> required in the Old Testament? What was the risk of approaching it "casually?"</p>
+                </div>
+
+                <div class="question-block p-4 rounded-lg mb-6">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 4 (Trust):</p>
+                    <p class="text-text-dark">What does following the <em>presence</em> of God with a mandated <em>distance</em> teach us about the nature of faith and obedience?</p>
+                </div>
+            </section>
+
+            <!-- Divider -->
+            <hr class="border-secondary-gold/50 mb-10">
+
+            <!-- Section III -->
+            <section class="mb-10">
+                <h2 class="text-2xl sm:text-3xl font-bold text-primary-blue mb-4 flex items-center">
+                    <span class="mr-3 text-secondary-gold">3.</span> Stepping into the Impossible (vs. 7-13)
+                </h2>
+                <p class="mb-6 text-text-dark leading-relaxed">
+                    The Jordan was <strong>overflowing</strong>, yet the priests had to step in *before* the water stopped. This required Joshua to be told, "I will be with you, as I was with Moses."
+                </p>
+
+                <div class="question-block p-4 rounded-lg mb-4">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 5 (Action):</p>
+                    <p class="text-text-dark">What is the significance of the priests having to step into the <strong>overflowing</strong> river *before* the way was clear? What "overflowing rivers" (impossible obstacles) do we face that require us to step in before seeing the solution?</p>
+                </div>
+
+                <div class="question-block p-4 rounded-lg mb-6">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 6 (Stillness):</p>
+                    <p class="text-text-dark">God's power made the priests <strong>"Stand still in the water"</strong> on dry ground. Where is God asking us to <strong>stand still</strong> and trust Him to hold back the current in our lives?</p>
+                </div>
+            </section>
+
+            <!-- Divider -->
+            <hr class="border-secondary-gold/50 mb-10">
+
+            <!-- Section IV: Application -->
+            <section>
+                <h2 class="text-2xl sm:text-3xl font-bold text-primary-blue mb-4 flex items-center">
+                    <span class="mr-3 text-secondary-gold">4.</span> The New Way: Grace and Drawing Near
+                </h2>
+                <p class="mb-6 text-text-dark leading-relaxed">
+                    The Old Testament required separation; the New Testament, through Christ, invites us to <strong>"Draw near to find mercy" (Hebrews 4:16)</strong>. God allowing the Ark to move shows <strong>grace</strong>.
+                </p>
+
+                <div class="question-block p-4 rounded-lg mb-4">
+                    <p class="font-semibold text-lg text-primary-blue">Discussion Question 7 (Conclusion):</p>
+                    <p class="text-text-dark">How does understanding the necessary <strong>separation</strong> in Joshua 3 help you appreciate the <em>freedom</em> and <em>privilege</em> we have now, through Christ, to <strong>"draw near"</strong> to God?</p>
+                </div>
+
+                <div class="question-block p-4 rounded-lg bg-secondary-gold/20">
+                    <p class="font-semibold text-lg text-primary-blue">Personal Application:</p>
+                    <p class="text-text-dark">What does it look like in your life right now to <strong>draw near</strong> to God's presence, knowing that Jesus is the "new way?"</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-10 pt-4 border-t-2 border-secondary-gold/50 text-text-dark/70 text-sm">
+            <p>Jarons converted Bible notes to website (AI)</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- PIN Logic ---
+        const PIN_CODE = "1123"; // The actual secret code remains 1123
+        const answerKeyWrapper = document.getElementById('answerKeyWrapper');
+        const answerKeyContent = document.getElementById('answerKeyContent');
+        const pinControlContainer = document.getElementById('pinControlContainer');
+        const discussionGuideSection = document.getElementById('discussionGuideSection');
+
+        // Initial setup function to ensure we always get the elements fresh after they are manipulated
+        function getElements() {
+            return {
+                showKeyButton: document.getElementById('showKeyButton'),
+                pinInputContainer: document.getElementById('pinInputContainer'),
+                pinInput: document.getElementById('pinInput'),
+                pinError: document.getElementById('pinError')
+            };
+        }
+
+        function showPinInput() {
+            const elements = getElements();
+            if (elements.showKeyButton) elements.showKeyButton.classList.add('hidden');
+            if (elements.pinInputContainer) elements.pinInputContainer.classList.remove('hidden');
+            if (elements.pinInput) {
+                elements.pinInput.value = '';
+                elements.pinInput.focus();
+            }
+            if (elements.pinError) elements.pinError.classList.add('hidden');
+        }
+
+        function hidePinInput() {
+            const elements = getElements();
+            if (elements.pinInputContainer) elements.pinInputContainer.classList.add('hidden');
+            if (elements.showKeyButton) elements.showKeyButton.classList.remove('hidden');
+            if (elements.pinError) elements.pinError.classList.add('hidden');
+        }
+
+        function viewKeyContent() {
+            answerKeyContent.classList.remove('hidden'); // SHOW THE ANSWERS
+            
+            // Change button to "Hide Key" and re-hide the discussion guide
+            pinControlContainer.innerHTML = `
+                <button onclick="hideKey()" class="px-6 py-2 bg-red-700 text-white font-bold rounded-lg shadow-lg hover:bg-red-800 transition duration-300">
+                    Hide Key
+                </button>
+            `;
+            discussionGuideSection.classList.add('hidden');
+        }
+
+        function checkPin() {
+            const elements = getElements();
+            const enteredPin = elements.pinInput ? elements.pinInput.value : '';
+
+            if (enteredPin === PIN_CODE) {
+                // Correct PIN: Unlock the key wrapper and replace controls
+                answerKeyWrapper.classList.remove('hidden');
+                
+                // Replace controls with "View" button and confirmation
+                pinControlContainer.innerHTML = `
+                    <p class="text-lg font-bold text-green-700 mb-3">Key Unlocked Successfully!</p>
+                    <button onclick="viewKeyContent()" class="px-8 py-3 bg-secondary-gold text-primary-blue font-extrabold rounded-xl shadow-lg hover:bg-secondary-gold/90 transition duration-300">
+                        View Answer Key Content
+                    </button>
+                `;
+                // Crucial step: Keep discussion guide visible until 'View' is pressed
+                discussionGuideSection.classList.remove('hidden'); 
+
+            } else {
+                // Incorrect PIN: Show error
+                if (elements.pinError) {
+                    elements.pinError.textContent = "Incorrect PIN. Try again.";
+                    elements.pinError.classList.remove('hidden');
+                }
+                if (elements.pinInput) elements.pinInput.value = '';
+                if (elements.pinInput) elements.pinInput.focus();
+            }
+        }
+
+        function hideKey() {
+            answerKeyWrapper.classList.add('hidden');
+            answerKeyContent.classList.add('hidden'); // Hide the actual content
+            discussionGuideSection.classList.remove('hidden'); // Show discussion guide again
+            
+            // Re-render the initial control block
+            pinControlContainer.innerHTML = `
+                <button id="showKeyButton" onclick="showPinInput()" class="px-6 py-2 bg-primary-blue text-white font-bold rounded-lg shadow-lg hover:bg-primary-blue/90 transition duration-300">
+                    Key
+                </button>
+                <div id="pinInputContainer" class="hidden flex items-center space-x-3">
+                    <input type="password" id="pinInput" placeholder="Enter PIN (key here nothing)" class="w-40 px-3 py-2 border border-secondary-gold rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-gold/50 text-center">
+                    <button onclick="checkPin()" class="px-4 py-2 bg-secondary-gold text-primary-blue font-bold rounded-lg shadow-md hover:bg-secondary-gold/90 transition duration-300">
+                        Unlock
+                    </button>
+                    <button onclick="hidePinInput()" class="px-3 py-2 text-text-dark/70 hover:text-text-dark transition duration-300">
+                        Cancel
+                    </button>
+                </div>
+                <p id="pinError" class="hidden text-sm text-red-600 font-semibold mt-2"></p>
+            `;
+        }
+
+        // Add event listener for Enter key on PIN input 
+        document.addEventListener('keypress', function(e) {
+            const elements = getElements();
+            if (e.key === 'Enter' && elements.pinInput && elements.pinInputContainer && !elements.pinInputContainer.classList.contains('hidden')) {
+                checkPin();
+            }
+        });
+    </script>
+
+</body>
+</html>
+
