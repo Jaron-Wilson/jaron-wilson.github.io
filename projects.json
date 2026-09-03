@@ -1,5 +1,15 @@
 [
   {
+    "title": "Pokemon Integrations Report Visualizer",
+    "description": "An interactive tool for visualizing integrations in real time.",
+    "link": "/integrations/visualizer/"
+  },
+  {
+    "title": "Doc Editor",
+    "description": "A lightweight document editor.",
+    "link": "/doc/"
+  },
+  {
     "title": "Blokus AI",
     "description": "A powerful AI designed to play the game of Blokus with strategic decision-making capabilities.",
     "link": "https://ja-ron.live/Blokus-ai/"

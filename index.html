@@ -82,6 +82,66 @@
             color: #007BFF;
             text-decoration: none;
         }
+        .live-section {
+            width: 80%;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+        .live-section h3 {
+            font-size: 2rem;
+            margin-bottom: .3rem;
+        }
+        .live-section > p {
+            color: #666;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+        }
+        #live-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .live-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-left: 4px solid #2f7d6c;
+            padding: 1.25rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .live-card:hover {
+            transform: translateY(-5px);
+        }
+        .live-card .badge {
+            display: inline-block;
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #2f7d6c;
+            background: #e7f4f0;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-bottom: .6rem;
+        }
+        .live-card h4 {
+            margin: 0 0 .3rem;
+        }
+        .live-card h4 a {
+            color: #1a1a17;
+            text-decoration: none;
+        }
+        .live-card h4 a:hover {
+            text-decoration: underline;
+        }
+        .live-card .domain {
+            font-family: monospace;
+            font-size: .8rem;
+            color: #888;
+            display: block;
+            margin-bottom: .5rem;
+        }
         .about-section {
             width: 80%;
             margin: 0 auto;
@@ -117,11 +177,12 @@
         <div class="container">
             <h1>Jaron Wilson</h1>
             <div>
+                <a href="#live">Live Software</a>
                 <a href="#projects">Projects</a>
                 <a href="#about">About</a>
                 <a href="#contact">Contact</a>
-                <a href="/integrations/visualizer/" target="_blank">Pokemon Integrations Report Visualizer</a>
-                <a href="/doc/">Doc Editor</a>
+                <a href="https://github.com/Jaron-Wilson" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://www.linkedin.com/in/jaron-wilson/" target="_blank" rel="noopener">LinkedIn</a>
             </div>
         </div>
     </nav>
@@ -131,13 +192,42 @@
         <p>I'm a passionate developer focused on creating elegant solutions to complex problems.</p>
     </section>
 
+    <section id="live" class="live-section">
+        <h3>Live Software</h3>
+        <p>Things I've built that are running right now.</p>
+        <div id="live-list">
+            <!-- Populated from live.json -->
+        </div>
+    </section>
+
     <section id="projects" class="projects-section">
-        <h3>Featured Projects</h3>
+        <h3>Projects</h3>
         <div id="project-list">
-            <!-- Project list will be dynamically generated here -->
+            <!-- Populated from projects.json -->
         </div>
     </section>
     <script>
+        // Both sections read from a JSON file rather than being hand-written
+        // into this page. Adding something new — live software, or a smaller
+        // project — is editing live.json or projects.json and pushing; nothing
+        // in this file has to change to add an entry.
+        fetch('live.json')
+            .then(response => response.json())
+            .then(items => {
+                const list = document.getElementById('live-list');
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.classList.add('live-card');
+                    card.innerHTML = `
+                        <span class="badge">Live</span>
+                        <h4><a href="${item.link}" target="_blank" rel="noopener">${item.title}</a></h4>
+                        <span class="domain">${item.domain}</span>
+                        <p>${item.description}</p>
+                    `;
+                    list.appendChild(card);
+                });
+            });
+
         fetch('projects.json')
             .then(response => response.json())
             .then(projects => {
@@ -146,7 +236,7 @@
                     const projectDiv = document.createElement('div');
                     projectDiv.classList.add('project');
                     projectDiv.innerHTML = `
-                        <h4><a href="${project.link}">${project.title}</a></h4>
+                        <h4><a href="${project.link}" target="_blank" rel="noopener">${project.title}</a></h4>
                         <p>${project.description}</p>
                     `;
                     projectList.appendChild(projectDiv);
@@ -161,7 +251,8 @@
 
     <section id="contact" class="contact-section">
         <h3>Get In Touch</h3>
-        <p>Email: your.email@example.com</p>
+        <p>Email: <a href="mailto:jaron@jaronwilson.dev">jaron@jaronwilson.dev</a></p>
+        <p><a href="https://github.com/Jaron-Wilson" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://www.linkedin.com/in/jaron-wilson/" target="_blank" rel="noopener">LinkedIn</a></p>
     </section>
 
     <footer>

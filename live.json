@@ -1,0 +1,9 @@
+[
+  {
+    "title": "Trove",
+    "tagline": "Personal finance, encrypted in your own Google Drive",
+    "description": "Balances and transactions are encrypted in the browser before they ever leave it. The server never holds a copy — passkey sign-in, no passwords.",
+    "link": "https://finance.jaronwilson.dev/",
+    "domain": "finance.jaronwilson.dev"
+  }
+]
