@@ -89,6 +89,16 @@
   }
   .token-box .hint { flex-basis: 100%; font-size: .78rem; color: var(--muted); }
 
+  .publish-bar {
+    position: sticky; top: 65px; z-index: 9;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 32px;
+  }
+  .publish-bar .status { font-size: .84rem; color: var(--muted); }
+  .publish-bar .status.ok { color: var(--ok); }
+  .publish-bar .status.bad { color: var(--bad); }
+
   button {
     font: inherit; font-size: .84rem; font-weight: 500; cursor: pointer;
     border: 1px solid var(--border); border-radius: 7px; padding: 7px 14px;
@@ -177,6 +187,11 @@
       </span>
     </div>
 
+    <div class="publish-bar">
+      <button id="publish-all" class="primary">Publish all changes</button>
+      <span class="status" id="publish-all-status">Load a section below, then edit and publish from here.</span>
+    </div>
+
     <div id="sections"></div>
   </main>
 </div>
@@ -260,7 +275,7 @@
   ];
 
   const state = {};
-  SECTIONS.forEach((s) => { state[s.id] = { items: null, sha: null }; });
+  SECTIONS.forEach((s) => { state[s.id] = { items: null, sha: null, dirty: false }; });
 
   // ---- Google Identity ----
 
@@ -369,6 +384,50 @@
     return res.json();
   }
 
+  // ---- Publish (one button for every section, one commit per changed file, in order) ----
+
+  let publishingAll = false;
+
+  async function publishAll() {
+    if (publishingAll) return;
+    const dirty = SECTIONS.filter((cfg) => state[cfg.id].dirty && state[cfg.id].items);
+    const barStatus = $('publish-all-status');
+    if (dirty.length === 0) {
+      barStatus.textContent = 'No changes to publish.';
+      barStatus.className = 'status';
+      return;
+    }
+    publishingAll = true;
+    $('publish-all').disabled = true;
+    const results = [];
+    for (const [i, cfg] of dirty.entries()) {
+      barStatus.textContent = `Publishing ${i + 1} of ${dirty.length}: ${cfg.title}…`;
+      barStatus.className = 'status';
+      const sectionStatus = document.getElementById(`status-${cfg.id}`);
+      try {
+        const s = state[cfg.id];
+        const result = await saveFile(cfg.path, s.items, s.sha, `portal: update ${cfg.path}`);
+        s.sha = result.content.sha;
+        s.dirty = false;
+        if (sectionStatus) { sectionStatus.textContent = 'Published ✓'; sectionStatus.className = 'section-status ok'; }
+        results.push({ cfg, ok: true });
+      } catch (e) {
+        if (sectionStatus) { sectionStatus.textContent = e.message; sectionStatus.className = 'section-status bad'; }
+        results.push({ cfg, ok: false, error: e.message });
+      }
+    }
+    publishingAll = false;
+    $('publish-all').disabled = false;
+    const okCount = results.filter((r) => r.ok).length;
+    const failCount = results.length - okCount;
+    barStatus.textContent = failCount === 0
+      ? `Published ${okCount} file${okCount === 1 ? '' : 's'} ✓ — GitHub Pages will rebuild in under a minute.`
+      : `Published ${okCount}, failed ${failCount} — see the failed section${failCount === 1 ? '' : 's'} above.`;
+    barStatus.className = 'status' + (failCount === 0 ? ' ok' : ' bad');
+  }
+
+  $('publish-all').addEventListener('click', publishAll);
+
   // ---- Rendering ----
 
   function renderSections() {
@@ -386,7 +445,6 @@
         <div class="section-actions">
           <button data-act="reload">Reload from GitHub</button>
           <button data-act="add">+ Add entry</button>
-          <button data-act="publish" class="primary">Publish changes</button>
           <span class="section-status" id="status-${cfg.id}"></span>
         </div>
       </div>
@@ -407,7 +465,7 @@
       setStatus('Loading…');
       try {
         const { items, sha } = await loadFile(cfg.path);
-        state[cfg.id] = { items, sha };
+        state[cfg.id] = { items, sha, dirty: false };
         setStatus('');
         drawItems();
       } catch (e) {
@@ -426,19 +484,8 @@
     el.querySelector('[data-act="add"]').addEventListener('click', () => {
       if (!state[cfg.id].items) return;
       state[cfg.id].items.push(cfg.blank());
+      state[cfg.id].dirty = true;
       drawItems();
-    });
-    el.querySelector('[data-act="publish"]').addEventListener('click', async () => {
-      const s = state[cfg.id];
-      if (!s.items) return;
-      setStatus('Publishing…');
-      try {
-        const result = await saveFile(cfg.path, s.items, s.sha, `portal: update ${cfg.path}`);
-        s.sha = result.content.sha;
-        setStatus('Published ✓', 'ok');
-      } catch (e) {
-        setStatus(e.message, 'bad');
-      }
     });
 
     load();
@@ -461,6 +508,7 @@
           <label for="f-${cfg.id}-${index}-${f.key}">${f.label}</label>`;
         field.querySelector('input').addEventListener('change', (e) => {
           item[f.key] = e.target.checked;
+          state[cfg.id].dirty = true;
           redraw();
         });
       } else if (f.type === 'select') {
@@ -468,18 +516,19 @@
           <select>${f.options.map((o) => `<option value="${o}" ${item[f.key] === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
         field.querySelector('select').addEventListener('change', (e) => {
           item[f.key] = e.target.value;
+          state[cfg.id].dirty = true;
           redraw();
         });
       } else if (f.type === 'textarea') {
         field.innerHTML = `<label>${f.label}</label><textarea></textarea>`;
         const ta = field.querySelector('textarea');
         ta.value = item[f.key] || '';
-        ta.addEventListener('input', (e) => { item[f.key] = e.target.value; });
+        ta.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
       } else {
         field.innerHTML = `<label>${f.label}</label><input type="text">`;
         const inp = field.querySelector('input');
         inp.value = item[f.key] || '';
-        inp.addEventListener('input', (e) => { item[f.key] = e.target.value; });
+        inp.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
       }
       grid.appendChild(field);
     });
@@ -491,8 +540,9 @@
     const del = document.createElement('button');
     del.textContent = 'Delete';
     del.addEventListener('click', () => {
-      if (!confirm(`Delete "${cfg.titleOf(item)}"? This only takes effect once you click Publish.`)) return;
+      if (!confirm(`Delete "${cfg.titleOf(item)}"? This only takes effect once you click Publish all changes.`)) return;
       state[cfg.id].items.splice(index, 1);
+      state[cfg.id].dirty = true;
       redraw();
     });
     foot.appendChild(del);
