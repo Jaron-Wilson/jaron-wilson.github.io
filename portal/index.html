@@ -156,8 +156,7 @@
 
   <div id="denied" class="gate denied" hidden>
     <h2>Not authorized</h2>
-    <p>Signed in as <code id="denied-email"></code>. This portal only unlocks for
-    <code>jaronwilson2025@gmail.com</code>.</p>
+    <p>Signed in as <code id="denied-email"></code>. This Google account isn't authorized for this portal.</p>
     <button id="try-again">Try a different account</button>
   </div>
 
@@ -191,7 +190,17 @@
   // Fill this in with your OAuth Client ID from Google Cloud Console, and add
   // https://jaronwilson.dev to that client's Authorized JavaScript origins.
   const GOOGLE_CLIENT_ID = '510500391490-559jhdtpkkbhktqv62lmvaani4pnthq7.apps.googleusercontent.com';
-  const ALLOWED_EMAIL = 'jaronwilson2025@gmail.com';
+  // SHA-256 of the one allowed email, lowercased — kept as a hash rather than
+  // plain text so the source of this public repo doesn't hand out the address
+  // itself. This is still just a UI gate, not a real security boundary; see
+  // the GitHub token below for what actually authorizes a write.
+  const ALLOWED_EMAIL_HASH = '5c3800a5211cd97a8d535ac1d40d0786789491643e770ef62486539b4e5c8e85';
+
+  async function sha256Hex(text) {
+    const bytes = new TextEncoder().encode(text);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
   const REPO = 'Jaron-Wilson/jaron-wilson.github.io';
   const BRANCH = 'update-website-design';
   const TOKEN_KEY = 'portal_gh_token';
@@ -263,12 +272,13 @@
     return JSON.parse(json);
   }
 
-  function handleCredential(response) {
+  async function handleCredential(response) {
     let claims;
     try { claims = decodeJwt(response.credential); } catch { return showDenied('(unreadable token)'); }
     const now = Date.now() / 1000;
     if (claims.aud !== GOOGLE_CLIENT_ID || claims.exp < now || !claims.email_verified) return showDenied(claims.email || '(unverified)');
-    if (claims.email.toLowerCase() !== ALLOWED_EMAIL) return showDenied(claims.email);
+    const hash = await sha256Hex(claims.email.toLowerCase());
+    if (hash !== ALLOWED_EMAIL_HASH) return showDenied(claims.email);
     showAdmin(claims.email);
   }
 
