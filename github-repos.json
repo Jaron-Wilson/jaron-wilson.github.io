@@ -9,17 +9,6 @@
     "visible": true
   },
   {
-    "name": "claude_apps",
-    "description": "Bunch of claude apps.",
-    "language": "",
-    "visibility": "public",
-    "link": "https://github.com/Jaron-Wilson/claude_apps",
-    "fork": false,
-    "archived": false,
-    "visible": true,
-    "updated": "2026-01-17"
-  },
-  {
     "name": "ingenious",
     "description": "",
     "language": "HTML",
@@ -209,6 +198,17 @@
     "fork": false,
     "archived": false,
     "visible": false
+  },
+  {
+    "name": "claude_apps",
+    "description": "Bunch of claude apps.",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/claude_apps",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2026-01-17"
   },
   {
     "name": "llm-chat-app-template",
