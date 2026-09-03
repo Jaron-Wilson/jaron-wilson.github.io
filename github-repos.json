@@ -1,7 +1,7 @@
 [
   {
     "name": "FinanceApp",
-    "description": "",
+    "description": "Trove — personal finance app with client-side encryption, passkey sign-in, and Google Drive as the storage backend. No server-side copy of balances or transactions.",
     "language": "Java",
     "visibility": "private",
     "fork": false,
