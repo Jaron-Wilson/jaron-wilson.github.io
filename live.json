@@ -12,5 +12,19 @@
     "description": "Build lines of matching symbols and keep all six colours moving. Your score is only as good as your weakest one. Solo and multiplayer boards.",
     "link": "https://ingenious.jaronwilson.dev/",
     "domain": "ingenious.jaronwilson.dev"
+  },
+  {
+    "title": "Costa Rica Missions Trip",
+    "tagline": "Non-profit donation platform",
+    "description": "A serverless payment portal on Cloudflare Workers and the Stripe API, taking secure donations straight to a charity with zero infrastructure cost.",
+    "link": "https://costaricamissiontrip.org/",
+    "domain": "costaricamissiontrip.org"
+  },
+  {
+    "title": "ShiftSync AI",
+    "tagline": "Smart scheduling, powered by AI",
+    "description": "Managers generate schedules with AI. Employees manage their own shifts, trade with each other, and request time off.",
+    "link": "https://shiftsync.work/",
+    "domain": "shiftsync.work"
   }
 ]
