@@ -121,7 +121,16 @@
   .item {
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     padding: 16px 18px; margin-bottom: 12px;
+    border-top: 2px solid transparent; border-bottom: 2px solid transparent;
   }
+  .item.dragging { opacity: .4; }
+  .item.drop-before { border-top-color: var(--accent); }
+  .item.drop-after { border-bottom-color: var(--accent); }
+  .item .drag-handle {
+    cursor: grab; color: var(--muted); font-size: .9rem; user-select: none;
+    display: inline-block; margin-bottom: 8px; letter-spacing: 2px;
+  }
+  .item .drag-handle:active { cursor: grabbing; }
   .item .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
   .item label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: 4px; }
   .item input[type=text], .item textarea, .item select {
@@ -226,8 +235,9 @@
     {
       id: 'repos',
       title: 'GitHub Repos',
-      hint: 'Powers /projects/. Hiding a repo here removes it from that page without deleting it from this list.',
+      hint: 'Powers /projects/. Hiding a repo here removes it from that page without deleting it from this list. Reloading fetches fresh "last pushed" dates for public repos and re-sorts newest first; private repos need that date entered by hand, since a repo-scoped token can’t read their metadata.',
       path: 'github-repos.json',
+      autoSortOnLoad: true,
       fields: [
         { key: 'name', label: 'Name', type: 'text' },
         { key: 'description', label: 'Description', type: 'textarea' },
@@ -237,9 +247,10 @@
         { key: 'fork', label: 'Fork', type: 'checkbox' },
         { key: 'forkedFrom', label: 'Forked from (owner/repo)', type: 'text', showIf: (r) => !!r.fork },
         { key: 'archived', label: 'Archived', type: 'checkbox' },
+        { key: 'updated', label: 'Last updated (auto for public, manual for private)', type: 'date' },
         { key: 'visible', label: 'Show on /projects', type: 'checkbox' },
       ],
-      blank: () => ({ name: '', description: '', language: '', visibility: 'public', link: '', fork: false, forkedFrom: '', archived: false, visible: true }),
+      blank: () => ({ name: '', description: '', language: '', visibility: 'public', link: '', fork: false, forkedFrom: '', archived: false, updated: '', visible: true }),
       titleOf: (r) => r.name || 'Untitled repo',
     },
     {
@@ -373,6 +384,27 @@
     return { items: JSON.parse(b64decode(data.content)), sha: data.sha };
   }
 
+  // A repo-scoped token can still read PUBLIC repo metadata anywhere on
+  // GitHub (public data needs no special access, just a valid token for the
+  // rate limit) — so "last pushed" dates can be fetched live for public
+  // repos. Private repos 404 for a token that isn't scoped to them, so their
+  // date stays whatever was typed in by hand.
+  async function fetchPublicDates(items) {
+    const owner = REPO.split('/')[0];
+    await Promise.all(items.filter((r) => r.visibility === 'public' && r.name).map(async (r) => {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(r.name)}`, { headers: ghHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.pushed_at) r.updated = data.pushed_at.slice(0, 10);
+      } catch { /* one repo failing to resolve shouldn't block the rest */ }
+    }));
+  }
+
+  function sortByUpdatedDesc(items) {
+    return [...items].sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+  }
+
   async function saveFile(path, items, sha, message) {
     const content = b64encode(JSON.stringify(items, null, 2) + '\n');
     const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURIComponent(path)}`, {
@@ -465,8 +497,18 @@
       setStatus('Loading…');
       try {
         const { items, sha } = await loadFile(cfg.path);
-        state[cfg.id] = { items, sha, dirty: false };
-        setStatus('');
+        let dirty = false;
+        if (cfg.autoSortOnLoad) {
+          const before = JSON.stringify(items);
+          setStatus('Loading… fetching latest dates from GitHub…');
+          await fetchPublicDates(items);
+          const sorted = sortByUpdatedDesc(items);
+          dirty = JSON.stringify(sorted) !== before;
+          state[cfg.id] = { items: sorted, sha, dirty };
+        } else {
+          state[cfg.id] = { items, sha, dirty: false };
+        }
+        setStatus(dirty ? 'Loaded — dates refreshed, re-sorted. Publish to save this order.' : '');
         drawItems();
       } catch (e) {
         setStatus(e.message, 'bad');
@@ -488,13 +530,77 @@
       drawItems();
     });
 
+    attachDragReorder(itemsEl, cfg, drawItems);
+
     load();
     return el;
+  }
+
+  // Drag a row's handle onto another row to move it there. Reordering only
+  // changes the in-memory array (and marks the section dirty) — it's just
+  // another edit, saved the same way as any field change, via Publish.
+  function attachDragReorder(itemsEl, cfg, redraw) {
+    let dragIndex = null;
+
+    itemsEl.addEventListener('dragstart', (e) => {
+      const handle = e.target.closest('.drag-handle');
+      if (!handle) { e.preventDefault(); return; }
+      const row = handle.closest('.item');
+      dragIndex = Number(row.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(dragIndex));
+      row.classList.add('dragging');
+    });
+
+    itemsEl.addEventListener('dragend', () => {
+      itemsEl.querySelectorAll('.item').forEach((el) => el.classList.remove('dragging', 'drop-before', 'drop-after'));
+      dragIndex = null;
+    });
+
+    itemsEl.addEventListener('dragover', (e) => {
+      if (dragIndex === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const row = e.target.closest('.item');
+      itemsEl.querySelectorAll('.item').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
+      if (!row) return;
+      const rect = row.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      row.classList.add(before ? 'drop-before' : 'drop-after');
+    });
+
+    itemsEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const row = e.target.closest('.item');
+      itemsEl.querySelectorAll('.item').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'dragging'));
+      if (!row || dragIndex === null) return;
+      const targetIndex = Number(row.dataset.index);
+      if (targetIndex !== dragIndex) {
+        const rect = row.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height / 2;
+        const items = state[cfg.id].items;
+        const [moved] = items.splice(dragIndex, 1);
+        let insertAt = dragIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        if (!before) insertAt += 1;
+        items.splice(Math.max(0, Math.min(items.length, insertAt)), 0, moved);
+        state[cfg.id].dirty = true;
+        redraw();
+      }
+      dragIndex = null;
+    });
   }
 
   function renderItem(cfg, item, index, redraw) {
     const row = document.createElement('div');
     row.className = 'item';
+    row.dataset.index = String(index);
+
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.draggable = true;
+    handle.title = 'Drag to reorder';
+    handle.textContent = '⠿ drag to reorder';
+    row.appendChild(handle);
 
     const grid = document.createElement('div');
     grid.className = 'grid';
@@ -524,6 +630,11 @@
         const ta = field.querySelector('textarea');
         ta.value = item[f.key] || '';
         ta.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
+      } else if (f.type === 'date') {
+        field.innerHTML = `<label>${f.label}</label><input type="date">`;
+        const inp = field.querySelector('input');
+        inp.value = item[f.key] || '';
+        inp.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
       } else {
         field.innerHTML = `<label>${f.label}</label><input type="text">`;
         const inp = field.querySelector('input');
