@@ -126,11 +126,16 @@
   .item.dragging { opacity: .4; }
   .item.drop-before { border-top-color: var(--accent); }
   .item.drop-after { border-bottom-color: var(--accent); }
+  .item .item-toprow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .item .drag-handle {
-    cursor: grab; color: var(--muted); font-size: .9rem; user-select: none;
-    display: inline-block; margin-bottom: 8px; letter-spacing: 2px;
+    cursor: grab; color: var(--muted); font-size: .9rem; user-select: none; letter-spacing: 2px;
   }
   .item .drag-handle:active { cursor: grabbing; }
+  .item .pos-label { display: flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); }
+  .item .pos-input {
+    width: 48px; font: inherit; font-size: .82rem; padding: 3px 6px;
+    border: 1px solid var(--border); border-radius: 5px; background: var(--paper); color: var(--ink);
+  }
   .item .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
   .item label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: 4px; }
   .item input[type=text], .item textarea, .item select {
@@ -595,12 +600,34 @@
     row.className = 'item';
     row.dataset.index = String(index);
 
+    const topRow = document.createElement('div');
+    topRow.className = 'item-toprow';
+
     const handle = document.createElement('span');
     handle.className = 'drag-handle';
     handle.draggable = true;
     handle.title = 'Drag to reorder';
     handle.textContent = '⠿ drag to reorder';
-    row.appendChild(handle);
+    topRow.appendChild(handle);
+
+    const total = state[cfg.id].items.length;
+    const posLabel = document.createElement('label');
+    posLabel.className = 'pos-label';
+    posLabel.innerHTML = `# <input type="number" class="pos-input" min="1" max="${total}" value="${index + 1}" title="Type a position and press Enter to jump there">`;
+    posLabel.querySelector('input').addEventListener('change', (e) => {
+      const items = state[cfg.id].items;
+      let target = parseInt(e.target.value, 10);
+      if (!Number.isFinite(target)) { e.target.value = String(index + 1); return; }
+      target = Math.max(1, Math.min(items.length, target)) - 1;
+      if (target === index) { e.target.value = String(index + 1); return; }
+      const [moved] = items.splice(index, 1);
+      items.splice(target, 0, moved);
+      state[cfg.id].dirty = true;
+      redraw();
+    });
+    topRow.appendChild(posLabel);
+
+    row.appendChild(topRow);
 
     const grid = document.createElement('div');
     grid.className = 'grid';
