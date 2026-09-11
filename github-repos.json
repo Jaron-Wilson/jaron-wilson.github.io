@@ -1,0 +1,283 @@
+[
+  {
+    "name": "FinanceApp",
+    "description": "Trove — personal finance app with client-side encryption, passkey sign-in, and Google Drive as the storage backend. No server-side copy of balances or transactions.",
+    "language": "Java",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": true
+  },
+  {
+    "name": "ingenious",
+    "description": "",
+    "language": "HTML",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2026-09-03"
+  },
+  {
+    "name": "streamdeck",
+    "description": "",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/streamdeck",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2025-06-08"
+  },
+  {
+    "name": "SpigotMinionsPlugin",
+    "description": "hackatime.hackclub challenge!",
+    "language": "Java",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/SpigotMinionsPlugin",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2025-07-08"
+  },
+  {
+    "name": "VolleyBallPredictions",
+    "description": "Given a csv file of previous games, predict who will win with team 1 vs team 2",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/VolleyBallPredictions",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2024-11-06"
+  },
+  {
+    "name": "WorkoutApp",
+    "description": "My workout Challenge app",
+    "language": "HTML",
+    "visibility": "public",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "link": "https://github.com/Jaron-Wilson/WorkoutApp",
+    "updated": "2026-01-25"
+  },
+  {
+    "name": "Blokus-ai",
+    "description": "Creating a blokus ai that can play 4 players and win?",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/Blokus-ai",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2024-12-12"
+  },
+  {
+    "name": "minecraft-gpt-god-plugin",
+    "description": "When this came out I wanted this all local ai, thats what i did and i want to publish it now!",
+    "language": "Java",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/minecraft-gpt-god-plugin",
+    "fork": true,
+    "forkedFrom": "YOUSY0US3F/minecraft-gpt-god-plugin",
+    "archived": false,
+    "visible": true,
+    "updated": "2025-04-02"
+  },
+  {
+    "name": "My-Local-Advanced-Ai",
+    "description": "",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/My-Local-Advanced-Ai",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2025-08-06"
+  },
+  {
+    "name": "playmat",
+    "description": "",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/playmat",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2025-03-31"
+  },
+  {
+    "name": "Supermat",
+    "description": "holomat Self",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/Supermat",
+    "fork": false,
+    "archived": true,
+    "visible": true,
+    "updated": "2025-03-31"
+  },
+  {
+    "name": "local-ai-server",
+    "description": "Hosting a local ai with security is tough, here is my local ai so I dont have to pay for ai plans",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/local-ai-server",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2025-03-02"
+  },
+  {
+    "name": "odysseus",
+    "description": "Self-hosted AI workspace.",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/odysseus",
+    "fork": true,
+    "forkedFrom": "arcahyadi/odysseus",
+    "archived": false,
+    "visible": true,
+    "updated": "2026-06-11"
+  },
+  {
+    "name": "Npm-Server-Video-Chat",
+    "description": "",
+    "language": "HTML",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/Npm-Server-Video-Chat",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2024-07-29"
+  },
+  {
+    "name": "aivoice",
+    "description": "",
+    "language": "Python",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/aivoice",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2024-07-28"
+  },
+  {
+    "name": "ShiftSyncAI",
+    "description": "A smart scheduling management platform allowing managers to generate schedules with AI and employees to manage shifts, trade, and request time off.",
+    "language": "TypeScript",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": true
+  },
+  {
+    "name": "costaricamissionstripwebsitev2",
+    "description": "",
+    "language": "TypeScript",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": false
+  },
+  {
+    "name": "JaronDynamics",
+    "description": "JaronDynamics Website",
+    "language": "JavaScript",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": false
+  },
+  {
+    "name": "CSCN112_001",
+    "description": "CSCN112: Programming in C++ Advanced (001)",
+    "language": "C++",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": false
+  },
+  {
+    "name": "claude_apps",
+    "description": "Bunch of claude apps.",
+    "language": "",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/claude_apps",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2026-01-17"
+  },
+  {
+    "name": "llm-chat-app-template",
+    "description": "",
+    "language": "JavaScript",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": false
+  },
+  {
+    "name": "nano-dev-extension",
+    "description": "",
+    "language": "JavaScript",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": false
+  },
+  {
+    "name": "radeer",
+    "description": "detects deer from a camera and emails with the count of deer found.",
+    "language": "",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": true
+  },
+  {
+    "name": "lmstudioserver",
+    "description": "",
+    "language": "JavaScript",
+    "visibility": "private",
+    "fork": false,
+    "archived": false,
+    "visible": true
+  },
+  {
+    "name": "claude-ai-website-upload",
+    "description": "This code is being uploaded by claude ai",
+    "language": "TypeScript",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/claude-ai-website-upload",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2026-01-09"
+  },
+  {
+    "name": "amazon-blog",
+    "description": "My clone repository",
+    "language": "HTML",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/amazon-blog",
+    "fork": false,
+    "archived": false,
+    "visible": true,
+    "updated": "2026-01-01"
+  },
+  {
+    "name": "swot",
+    "description": "Identify email addresses or domains names that belong to colleges or universities. Help automate the process of approving or rejecting academic discounts.",
+    "language": "Kotlin",
+    "visibility": "public",
+    "link": "https://github.com/Jaron-Wilson/swot",
+    "fork": true,
+    "forkedFrom": "JetBrains/swot",
+    "archived": false,
+    "visible": true,
+    "updated": "2025-10-27"
+  }
+]

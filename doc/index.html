@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaron's Browser Docx Editor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Libraries for Docx Conversion -->
+    <!-- Mammoth: Converts .docx to HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- html-docx-js: Converts HTML back to .docx -->
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <!-- FileSaver: To save the generated file -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+
+        /* Editor Page Styling (A4-ish ratio) */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            outline: none;
+            overflow-wrap: break-word;
+        }
+        
+        /* Typography defaults for the editor to match Word feel */
+        .page p { margin-bottom: 1em; line-height: 1.5; }
+        .page h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; }
+        .page h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
+        .page h3 { font-size: 1.17em; font-weight: bold; margin-bottom: 0.5em; }
+        .page ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 1em; }
+        .page ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 1em; }
+        .page blockquote { border-left: 4px solid #ddd; padding-left: 1em; color: #666; margin-left: 0; }
+        
+        /* Print emulation */
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+            .page { width: 100%; box-shadow: none; margin: 0; padding: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-slate-800 font-sans">
+
+    <!-- Top Navigation / Toolbar -->
+    <div class="bg-white border-b border-gray-200 shadow-sm z-10 flex-none">
+        
+        <!-- Header: Title & Actions -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 text-white p-1.5 rounded-lg">
+                    <i class="ph ph-file-doc text-xl"></i>
+                </div>
+                <h1 class="font-bold text-lg text-gray-800">Docx Editor</h1>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="status-msg" class="text-sm text-gray-500 italic hidden">Processing...</div>
+                <button onclick="downloadDocx()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+                    <i class="ph ph-download-simple text-lg"></i>
+                    <span>Download .docx</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-gray-50 px-4 py-3 flex flex-wrap items-center gap-4 text-sm border-b border-gray-200">
+            <!-- File Upload -->
+            <div class="flex items-center gap-2">
+                <label for="file-upload" class="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded shadow-sm transition-colors font-medium">
+                    <i class="ph ph-upload-simple mr-1"></i> Upload File
+                </label>
+                <input id="file-upload" type="file" accept=".docx" class="hidden" onchange="handleFileUpload(this)">
+                <span class="text-gray-400 text-xs">or</span>
+            </div>
+
+            <!-- URL Input -->
+            <div class="flex-1 flex items-center gap-2 max-w-lg relative group">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <i class="ph ph-link"></i>
+                </div>
+                <input type="text" id="url-input" placeholder="Paste .docx URL here..." class="w-full pl-9 pr-20 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                <button onclick="handleUrlFetch()" class="absolute right-1 top-1 bottom-1 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 rounded text-xs font-medium border border-gray-200 transition-colors">
+                    Load
+                </button>
+            </div>
+            
+            <!-- Warning tooltip for URL -->
+            <div class="hidden md:block text-xs text-orange-600 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                <i class="ph ph-warning-circle"></i>
+                <span>Direct links only (CORS restricted)</span>
+            </div>
+        </div>
+
+        <!-- Formatting Toolbar -->
+        <div class="px-4 py-2 flex items-center gap-1 overflow-x-auto">
+            <button onclick="execCmd('bold')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Bold"><i class="ph ph-text-b text-lg"></i></button>
+            <button onclick="execCmd('italic')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Italic"><i class="ph ph-text-italic text-lg"></i></button>
+            <button onclick="execCmd('underline')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Underline"><i class="ph ph-text-underline text-lg"></i></button>
+            <div class="w-px h-6 bg-gray-300 mx-1"></div>
+            <button onclick="execCmd('justifyLeft')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Align Left"><i class="ph ph-text-align-left text-lg"></i></button>
+            <button onclick="execCmd('justifyCenter')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Align Center"><i class="ph ph-text-align-center text-lg"></i></button>
+            <button onclick="execCmd('justifyRight')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Align Right"><i class="ph ph-text-align-right text-lg"></i></button>
+            <div class="w-px h-6 bg-gray-300 mx-1"></div>
+            <button onclick="execCmd('insertUnorderedList')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Bullet List"><i class="ph ph-list-bullets text-lg"></i></button>
+            <button onclick="execCmd('insertOrderedList')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700" title="Numbered List"><i class="ph ph-list-numbers text-lg"></i></button>
+            <div class="w-px h-6 bg-gray-300 mx-1"></div>
+            <button onclick="execCmd('formatBlock', 'H1')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700 font-bold text-sm">H1</button>
+            <button onclick="execCmd('formatBlock', 'H2')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700 font-bold text-sm">H2</button>
+            <button onclick="execCmd('formatBlock', 'P')" class="p-1.5 rounded hover:bg-gray-100 text-gray-700 text-sm">P</button>
+            <div class="w-px h-6 bg-gray-300 mx-1"></div>
+             <button onclick="execCmd('removeFormat')" class="p-1.5 rounded hover:bg-red-50 text-red-600" title="Clear Formatting"><i class="ph ph-eraser text-lg"></i></button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 overflow-y-auto bg-gray-200 relative p-8 cursor-text" id="workspace" onclick="focusEditor(event)">
+        <!-- The Page -->
+        <div id="editor" class="page" contenteditable="true">
+            <h1 style="text-align: center; color: #3b82f6;">Welcome to Docx Editor</h1>
+            <p>You can upload a <b>.docx</b> file using the button above, or paste a direct link to one.</p>
+            <p>Once loaded, you can edit the content right here and download it back as a .docx file.</p>
+            <ul>
+                <li>Supports basic formatting</li>
+                <li>Lists and Headers</li>
+                <li>Images (experimental)</li>
+            </ul>
+            <p><i>Try uploading a file to get started!</i></p>
+        </div>
+        <div class="h-16"></div> <!-- Bottom spacer -->
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-gray-800 text-white px-4 py-3 rounded shadow-lg flex items-center gap-3 z-50">
+        <i id="toast-icon" class="ph ph-info text-xl"></i>
+        <span id="toast-msg">Notification</span>
+    </div>
+
+    <script>
+        // --- UI Interactions ---
+
+        function focusEditor(e) {
+            // If clicking the gray background, focus the editor
+            if(e.target.id === 'workspace') {
+                document.getElementById('editor').focus();
+            }
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = msg;
+            
+            // Reset classes
+            toast.className = "fixed bottom-5 right-5 transition-all duration-300 px-4 py-3 rounded shadow-lg flex items-center gap-3 z-50 transform translate-y-0 opacity-100";
+            
+            if (type === 'error') {
+                toast.classList.add('bg-red-600', 'text-white');
+                toastIcon.className = "ph ph-warning-circle text-xl";
+            } else if (type === 'success') {
+                toast.classList.add('bg-green-600', 'text-white');
+                toastIcon.className = "ph ph-check-circle text-xl";
+            } else {
+                toast.classList.add('bg-gray-800', 'text-white');
+                toastIcon.className = "ph ph-info text-xl";
+            }
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function setStatus(loading) {
+            const el = document.getElementById('status-msg');
+            if(loading) {
+                el.classList.remove('hidden');
+                document.body.style.cursor = 'wait';
+            } else {
+                el.classList.add('hidden');
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        // --- Editing Functions ---
+
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('editor').focus();
+        }
+
+        // --- Core Logic: Import ---
+
+        function handleFileUpload(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+
+                setStatus(true);
+
+                reader.onload = function(event) {
+                    const arrayBuffer = event.target.result;
+                    convertDocxToHtml(arrayBuffer);
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        async function handleUrlFetch() {
+            const url = document.getElementById('url-input').value.trim();
+            if (!url) return showToast('Please enter a URL first', 'error');
+
+            setStatus(true);
+
+            try {
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                convertDocxToHtml(arrayBuffer);
+                showToast('Document loaded successfully', 'success');
+
+            } catch (error) {
+                console.error(error);
+                setStatus(false);
+                // Detailed error message for CORS
+                if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+                    showToast('CORS Error: Cannot download from this URL. Try downloading the file manually and using the "Upload File" button.', 'error');
+                } else {
+                    showToast(`Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function convertDocxToHtml(arrayBuffer) {
+            // Mammoth options: map generic styles to reasonable HTML tags
+            const options = {
+                styleMap: [
+                    "p[style-name='Title'] => h1:fresh",
+                    "p[style-name='Subtitle'] => h2:fresh"
+                ]
+            };
+
+            mammoth.convertToHtml({arrayBuffer: arrayBuffer}, options)
+                .then(displayResult)
+                .catch(handleError);
+        }
+
+        function displayResult(result) {
+            setStatus(false);
+            const editor = document.getElementById('editor');
+            editor.innerHTML = result.value;
+            
+            // Optional: Log warnings from Mammoth
+            if (result.messages.length > 0) {
+                console.log("Mammoth warnings:", result.messages);
+            }
+            
+            showToast("Document converted and ready to edit!", "success");
+        }
+
+        function handleError(err) {
+            setStatus(false);
+            console.error(err);
+            showToast("Error processing document.", "error");
+        }
+
+        // --- Core Logic: Export ---
+
+        function downloadDocx() {
+            setStatus(true);
+            
+            // 1. Get HTML content
+            const contentHtml = document.getElementById('editor').innerHTML;
+
+            // 2. Wrap it in a basic HTML structure necessary for the converter
+            // The converter expects a full HTML document string
+            const htmlString = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Exported Document</title>
+                    <style>
+                        body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; }
+                        p { margin-bottom: 1em; line-height: 1.15; }
+                    </style>
+                </head>
+                <body>
+                    ${contentHtml}
+                </body>
+                </html>
+            `;
+
+            try {
+                // 3. Convert to Blob
+                // 'html-docx-js' exposes a global variable 'htmlDocx'
+                const converted = htmlDocx.asBlob(htmlString);
+
+                // 4. Save
+                saveAs(converted, 'edited_document.docx');
+                showToast("Download started!", "success");
+            } catch (e) {
+                console.error(e);
+                showToast("Error creating .docx file", "error");
+            } finally {
+                setStatus(false);
+            }
+        }
+    </script>
+</body>
+</html>

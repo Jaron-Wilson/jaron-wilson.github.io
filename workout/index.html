@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Workout Tracker</title>
+    
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Load Babel (translates JSX to JS in the browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Smooth transitions */
+        body { transition: background-color 0.3s; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <!-- React Root -->
+    <div id="root"></div>
+
+    <!-- Your React Code -->
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- ICONS (Inline SVGs to replace lucide-react for standalone usage) ---
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {children}
+            </svg>
+        );
+
+        const Play = (props) => (
+            <IconBase {...props}><polygon points="5 3 19 12 5 21 5 3"></polygon></IconBase>
+        );
+        const CheckCircle = (props) => (
+            <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></IconBase>
+        );
+        const Calendar = (props) => (
+            <IconBase {...props}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></IconBase>
+        );
+        const Info = (props) => (
+            <IconBase {...props}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></IconBase>
+        );
+        const Dumbbell = (props) => (
+            <IconBase {...props}><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></IconBase>
+        );
+        const Activity = (props) => (
+            <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></IconBase>
+        );
+
+        // --- MAIN APP COMPONENT ---
+        const WorkoutApp = () => {
+            const [activeTab, setActiveTab] = useState('mon');
+            // Using localStorage to save progress so it persists on refresh!
+            const [completedSets, setCompletedSets] = useState(() => {
+                const saved = localStorage.getItem('workoutProgress');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            const toggleSet = (dayId, exerciseIndex, setIndex) => {
+                const key = `${dayId}-${exerciseIndex}-${setIndex}`;
+                setCompletedSets(prev => {
+                    const newState = { ...prev, [key]: !prev[key] };
+                    localStorage.setItem('workoutProgress', JSON.stringify(newState));
+                    return newState;
+                });
+            };
+
+            const schedule = {
+                mon: {
+                id: 'mon',
+                title: 'Monday',
+                subtitle: 'Upper Body A',
+                focus: 'Strength Focus (5-8 Reps)',
+                color: 'bg-blue-600',
+                lightColor: 'bg-blue-50',
+                textColor: 'text-blue-600',
+                exercises: [
+                    { name: "Bench Press (Barbell/Dumbbell)", sets: 3, reps: "5–8", search: "barbell bench press form" },
+                    { name: "Bent-Over Rows", sets: 3, reps: "6–8", search: "barbell bent over row form" },
+                    { name: "Overhead Press", sets: 3, reps: "6–8", search: "overhead press form" },
+                    { name: "Pull-Ups or Lat Pulldowns", sets: 3, reps: "8–10", search: "pull up form" },
+                    { name: "Dips", sets: 2, reps: "10–12", search: "dips exercise form" },
+                    { name: "Bicep Curls", sets: 2, reps: "10–12", search: "barbell bicep curl form" },
+                ]
+                },
+                tue: {
+                id: 'tue',
+                title: 'Tuesday',
+                subtitle: 'Lower Body A',
+                focus: 'Strength Focus (5-8 Reps)',
+                color: 'bg-red-600',
+                lightColor: 'bg-red-50',
+                textColor: 'text-red-600',
+                exercises: [
+                    { name: "Squats", sets: 3, reps: "5–8", search: "barbell squat form" },
+                    { name: "Romanian Deadlifts (RDLs)", sets: 3, reps: "6–8", search: "romanian deadlift form" },
+                    { name: "Walking Lunges", sets: 3, reps: "8–10 /leg", search: "walking lunges form" },
+                    { name: "Calf Raises", sets: 4, reps: "10–12", search: "standing calf raise form" },
+                    { name: "Plank", sets: 3, reps: "45–60s", search: "proper plank form" },
+                ]
+                },
+                wed: {
+                id: 'wed',
+                title: 'Wednesday',
+                subtitle: 'Active Recovery',
+                focus: 'Mobility & Light Cardio',
+                type: 'recovery',
+                content: "30-minute brisk walk, light cycling, swimming, yoga, or a mobility stretching routine."
+                },
+                thu: {
+                id: 'thu',
+                title: 'Thursday',
+                subtitle: 'Upper Body B',
+                focus: 'Hypertrophy Focus (10-15 Reps)',
+                color: 'bg-indigo-600',
+                lightColor: 'bg-indigo-50',
+                textColor: 'text-indigo-600',
+                exercises: [
+                    { name: "Incline Dumbbell Press", sets: 3, reps: "10–12", search: "incline dumbbell press form" },
+                    { name: "Seated/Chest-Supported Row", sets: 3, reps: "10–12", search: "seated cable row form" },
+                    { name: "Lateral Raises", sets: 3, reps: "12–15", search: "dumbbell lateral raise form" },
+                    { name: "Face Pulls", sets: 3, reps: "15–20", search: "face pull form" },
+                    { name: "Tricep Rope Pushdowns", sets: 3, reps: "12–15", search: "tricep rope pushdown form" },
+                    { name: "Hammer Curls", sets: 3, reps: "12–15", search: "dumbbell hammer curl form" },
+                ]
+                },
+                fri: {
+                id: 'fri',
+                title: 'Friday',
+                subtitle: 'Lower Body B',
+                focus: 'Hypertrophy Focus (10-15 Reps)',
+                color: 'bg-orange-600',
+                lightColor: 'bg-orange-50',
+                textColor: 'text-orange-600',
+                exercises: [
+                    { name: "Deadlifts", sets: 3, reps: "5", search: "conventional deadlift form" },
+                    { name: "Leg Press or Hack Squat", sets: 3, reps: "10–12", search: "leg press form" },
+                    { name: "Leg Curls", sets: 3, reps: "12–15", search: "leg curl machine form" },
+                    { name: "Leg Extensions", sets: 3, reps: "12–15", search: "leg extension form" },
+                    { name: "Hanging Leg Raises", sets: 3, reps: "10–15", search: "hanging leg raise form" },
+                ]
+                },
+                weekend: {
+                id: 'weekend',
+                title: 'Weekend',
+                subtitle: 'Recovery / Rest',
+                focus: 'Rest & Recover',
+                type: 'recovery',
+                content: "Saturday: Active Recovery (Hike/Walk). Sunday: Full Rest. Eat well and sleep 7-9 hours."
+                }
+            };
+
+            const currentDay = schedule[activeTab];
+
+            return (
+                <div className="flex flex-col min-h-screen bg-gray-100 font-sans">
+                {/* Header */}
+                <header className="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50">
+                    <div className="max-w-md mx-auto flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold flex items-center gap-2">
+                        <Activity size={24} className="text-emerald-400" />
+                        FitTracker
+                        </h1>
+                        <p className="text-xs text-slate-400">Weekly Upper/Lower Split</p>
+                    </div>
+                    <button className="text-xs bg-slate-800 px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700" onClick={() => window.open('https://youtube.com', '_blank')}>
+                        Open YT
+                    </button>
+                    </div>
+                </header>
+
+                {/* Navigation Tabs */}
+                <div className="bg-white shadow-sm overflow-x-auto sticky top-[60px] z-40">
+                    <div className="flex max-w-md mx-auto p-2 gap-2 min-w-max">
+                    {Object.values(schedule).map((day) => (
+                        <button
+                        key={day.id}
+                        onClick={() => setActiveTab(day.id)}
+                        className={`flex flex-col items-center justify-center p-2 min-w-[4.5rem] rounded-lg transition-all ${
+                            activeTab === day.id
+                            ? 'bg-slate-900 text-white shadow-md transform scale-105'
+                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                        >
+                        <span className="text-xs font-bold uppercase">{day.title.substring(0, 3)}</span>
+                        {day.type === 'recovery' ? (
+                            <Calendar size={16} className="mt-1 opacity-50" />
+                        ) : (
+                            <Dumbbell size={16} className="mt-1 opacity-50" />
+                        )}
+                        </button>
+                    ))}
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <main className="flex-grow p-4 max-w-md mx-auto w-full">
+                    
+                    {/* Day Header Card */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">{currentDay.title}</h2>
+                    <h3 className={`text-lg font-medium ${currentDay.textColor || 'text-gray-600'}`}>
+                        {currentDay.subtitle}
+                    </h3>
+                    <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        {currentDay.focus}
+                    </div>
+                    </div>
+
+                    {/* Exercises List */}
+                    {currentDay.type === 'recovery' ? (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                            <Activity size={32} className="text-green-600" />
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{currentDay.content}</p>
+                    </div>
+                    ) : (
+                    <div className="space-y-4">
+                        {currentDay.exercises.map((exercise, idx) => (
+                        <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="p-4 border-b border-gray-50">
+                            <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-bold text-gray-900 text-lg leading-tight">{exercise.name}</h4>
+                                <a 
+                                href={`https://www.youtube.com/results?search_query=${exercise.search}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                                title="Watch Tutorial"
+                                >
+                                <Play size={20} fill="currentColor" />
+                                </a>
+                            </div>
+                            <p className="text-sm text-gray-500">Target: <span className="font-mono bg-gray-100 px-1 rounded text-gray-800">{exercise.sets} Sets</span> x <span className="font-mono bg-gray-100 px-1 rounded text-gray-800">{exercise.reps} Reps</span></p>
+                            </div>
+                            
+                            {/* Sets Checkboxes */}
+                            <div className="bg-gray-50 p-3 flex gap-2 overflow-x-auto">
+                            {[...Array(exercise.sets)].map((_, setIdx) => {
+                                const isCompleted = completedSets[`${activeTab}-${idx}-${setIdx}`];
+                                return (
+                                <button
+                                    key={setIdx}
+                                    onClick={() => toggleSet(activeTab, idx, setIdx)}
+                                    className={`flex-1 flex items-center justify-center py-2 rounded-lg text-sm font-medium transition-all ${
+                                    isCompleted 
+                                        ? `${currentDay.color} text-white shadow-sm` 
+                                        : 'bg-white border border-gray-200 text-gray-400 hover:border-gray-300'
+                                    }`}
+                                >
+                                    {isCompleted ? <CheckCircle size={16} className="mr-1" /> : <span className="mr-1 text-xs">Set</span>} 
+                                    {setIdx + 1}
+                                </button>
+                                );
+                            })}
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                    )}
+
+                    {/* Info / Footer */}
+                    <div className="mt-8 bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div className="flex items-start gap-3">
+                        <Info className="text-blue-500 flex-shrink-0 mt-1" size={20} />
+                        <div className="text-sm text-blue-800">
+                        <p className="font-bold mb-1">Principles for Success:</p>
+                        <ul className="list-disc pl-4 space-y-1 opacity-80">
+                            <li><strong>Progressive Overload:</strong> Increase weight slightly each week.</li>
+                            <li><strong>Rest:</strong> 2-3 mins for Strength, 60-90s for Hypertrophy.</li>
+                        </ul>
+                        </div>
+                    </div>
+                    </div>
+                    
+                    <div className="h-10"></div>
+                </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<WorkoutApp />);
+    </script>
+</body>
+</html>

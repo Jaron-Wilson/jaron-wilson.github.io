@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Portal — Jaron Wilson</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #faf8f4;
+    --surface: #ffffff;
+    --ink: #1a1a17;
+    --muted: #6b6862;
+    --border: #e8e4dc;
+    --accent: #b3542b;
+    --accent-ink: #ffffff;
+    --ok: #2f5d50;
+    --bad: #a33a2c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #17150f;
+      --surface: #201d16;
+      --ink: #ede9e0;
+      --muted: #a39d8f;
+      --border: #35322a;
+      --accent: #d97a4a;
+      --accent-ink: #1a1109;
+      --ok: #7fb8a4;
+      --bad: #e08a78;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -0.01em; margin: 0; font-optical-sizing: none; font-variation-settings: "opsz" 72; }
+  a { color: var(--accent); }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; padding-block: 16px; }
+  nav .brand { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.15rem; color: var(--ink); text-decoration: none; font-optical-sizing: none; font-variation-settings: "opsz" 72; }
+  nav .status { font-size: .82rem; color: var(--muted); }
+
+  header.hero { padding: 56px 0 32px; }
+  header.hero .eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+  header.hero h1 { font-size: clamp(1.8rem, 4vw, 2.3rem); }
+  header.hero p { color: var(--muted); max-width: 60ch; margin-top: 12px; }
+
+  .gate {
+    max-width: 440px; margin: 60px auto; text-align: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 40px 32px;
+  }
+  .gate p { color: var(--muted); font-size: .92rem; margin: 14px 0 22px; }
+  #g-signin { display: flex; justify-content: center; }
+
+  .denied { border-color: var(--bad); }
+  .denied h2 { color: var(--bad); }
+  .denied code { background: color-mix(in srgb, var(--bad) 12%, transparent); padding: 2px 6px; border-radius: 4px; }
+
+  .banner {
+    border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; font-size: .86rem;
+  }
+  .banner.warn { border-color: var(--accent); color: var(--accent); }
+  .banner code { background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 1px 6px; border-radius: 4px; }
+
+  .token-box {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 32px;
+  }
+  .token-box input {
+    flex: 1; min-width: 220px; font: inherit; font-size: .85rem; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--paper); color: var(--ink);
+  }
+  .token-box .hint { flex-basis: 100%; font-size: .78rem; color: var(--muted); }
+
+  .publish-bar {
+    position: sticky; top: 65px; z-index: 9;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 32px;
+  }
+  .publish-bar .status { font-size: .84rem; color: var(--muted); }
+  .publish-bar .status.ok { color: var(--ok); }
+  .publish-bar .status.bad { color: var(--bad); }
+
+  button {
+    font: inherit; font-size: .84rem; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 7px; padding: 7px 14px;
+    background: var(--surface); color: var(--ink);
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.primary:hover { opacity: .92; color: var(--accent-ink); }
+  button.ghost { border-color: transparent; color: var(--muted); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  section.data-section { border-top: 1px solid var(--border); padding: 32px 0; }
+  section.data-section .head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+  section.data-section .head p { color: var(--muted); font-size: .84rem; margin: 4px 0 20px; }
+  .section-actions { display: flex; gap: 8px; align-items: center; }
+  .section-status { font-size: .8rem; color: var(--muted); margin-left: 6px; }
+  .section-status.ok { color: var(--ok); }
+  .section-status.bad { color: var(--bad); }
+
+  .item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; margin-bottom: 12px;
+    border-top: 2px solid transparent; border-bottom: 2px solid transparent;
+  }
+  .item.dragging { opacity: .4; }
+  .item.drop-before { border-top-color: var(--accent); }
+  .item.drop-after { border-bottom-color: var(--accent); }
+  .item .item-toprow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .item .drag-handle {
+    cursor: grab; color: var(--muted); font-size: .9rem; user-select: none; letter-spacing: 2px;
+  }
+  .item .drag-handle:active { cursor: grabbing; }
+  .item .pos-label { display: flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); }
+  .item .pos-input {
+    width: 48px; font: inherit; font-size: .82rem; padding: 3px 6px;
+    border: 1px solid var(--border); border-radius: 5px; background: var(--paper); color: var(--ink);
+  }
+  .item .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .item label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: 4px; }
+  .item input[type=text], .item textarea, .item select {
+    width: 100%; font: inherit; font-size: .88rem; padding: 7px 9px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--paper); color: var(--ink);
+  }
+  .item textarea { resize: vertical; min-height: 44px; }
+  .item .checkbox-field { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .item .checkbox-field label { margin: 0; text-transform: none; font-size: .85rem; letter-spacing: 0; color: var(--ink); }
+  .item .row-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .item .row-foot button { color: var(--bad); }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0 40px; font-size: .82rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/">Jaron Wilson</a>
+    <span class="status" id="nav-status"></span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Admin</div>
+    <h1>Portal</h1>
+    <p>Manage what shows on jaronwilson.dev — live software, featured projects, and the full GitHub repo list.</p>
+  </header>
+
+  <div id="gate" class="gate">
+    <h2>Sign in</h2>
+    <p>Restricted to one Google account.</p>
+    <div id="g-signin"></div>
+    <p id="gate-config-warning" class="banner warn" style="display:none; text-align:left; margin-top:20px;">
+      No Google Client ID is configured yet. Edit <code>GOOGLE_CLIENT_ID</code> near the top of this page's script,
+      and make sure <code>https://jaronwilson.dev</code> is added under Authorized JavaScript origins for that
+      client in Google Cloud Console → Credentials.
+    </p>
+  </div>
+
+  <div id="denied" class="gate denied" hidden>
+    <h2>Not authorized</h2>
+    <p>Signed in as <code id="denied-email"></code>. This Google account isn't authorized for this portal.</p>
+    <button id="try-again">Try a different account</button>
+  </div>
+
+  <main id="admin" hidden>
+    <div class="banner">
+      Signed in as <strong id="admin-email"></strong> · <button class="ghost" id="sign-out" style="padding:2px 8px;">Sign out</button>
+    </div>
+
+    <div class="token-box">
+      <input type="password" id="gh-token" placeholder="GitHub token (fine-grained, this repo only, Contents: read and write)">
+      <button id="save-token" class="primary">Save token</button>
+      <button id="forget-token" class="ghost">Forget</button>
+      <span class="hint">
+        Stored only in this browser's local storage — sent only to api.github.com, never anywhere else.
+        Create one at
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>
+        — scope it to only <code>jaron-wilson.github.io</code>, permission <code>Contents: Read and write</code>.
+      </span>
+    </div>
+
+    <div class="publish-bar">
+      <button id="publish-all" class="primary">Publish all changes</button>
+      <span class="status" id="publish-all-status">Load a section below, then edit and publish from here.</span>
+    </div>
+
+    <div id="sections"></div>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">This page is not linked from the site and is excluded from indexing. It is not a real security boundary by itself — see the GitHub token above for what actually gates a write.</div>
+</footer>
+
+<script>
+(() => {
+  // Fill this in with your OAuth Client ID from Google Cloud Console, and add
+  // https://jaronwilson.dev to that client's Authorized JavaScript origins.
+  const GOOGLE_CLIENT_ID = '510500391490-559jhdtpkkbhktqv62lmvaani4pnthq7.apps.googleusercontent.com';
+  // SHA-256 of the one allowed email, lowercased — kept as a hash rather than
+  // plain text so the source of this public repo doesn't hand out the address
+  // itself. This is still just a UI gate, not a real security boundary; see
+  // the GitHub token below for what actually authorizes a write.
+  const ALLOWED_EMAIL_HASH = '5c3800a5211cd97a8d535ac1d40d0786789491643e770ef62486539b4e5c8e85';
+
+  async function sha256Hex(text) {
+    const bytes = new TextEncoder().encode(text);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  const REPO = 'Jaron-Wilson/jaron-wilson.github.io';
+  const BRANCH = 'update-website-design';
+  const TOKEN_KEY = 'portal_gh_token';
+
+  const $ = (id) => document.getElementById(id);
+
+  const SECTIONS = [
+    {
+      id: 'repos',
+      title: 'GitHub Repos',
+      hint: 'Powers /projects/. Hiding a repo here removes it from that page without deleting it from this list. Reloading fetches fresh "last pushed" dates for public repos and re-sorts newest first; private repos need that date entered by hand, since a repo-scoped token can’t read their metadata.',
+      path: 'github-repos.json',
+      autoSortOnLoad: true,
+      fields: [
+        { key: 'name', label: 'Name', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+        { key: 'language', label: 'Language', type: 'text' },
+        { key: 'visibility', label: 'Visibility', type: 'select', options: ['public', 'private'] },
+        { key: 'link', label: 'Link (public repos only)', type: 'text', showIf: (r) => r.visibility === 'public' },
+        { key: 'fork', label: 'Fork', type: 'checkbox' },
+        { key: 'forkedFrom', label: 'Forked from (owner/repo)', type: 'text', showIf: (r) => !!r.fork },
+        { key: 'archived', label: 'Archived', type: 'checkbox' },
+        { key: 'updated', label: 'Last updated (auto for public, manual for private)', type: 'date' },
+        { key: 'visible', label: 'Show on /projects', type: 'checkbox' },
+      ],
+      blank: () => ({ name: '', description: '', language: '', visibility: 'public', link: '', fork: false, forkedFrom: '', archived: false, updated: '', visible: true }),
+      titleOf: (r) => r.name || 'Untitled repo',
+    },
+    {
+      id: 'live',
+      title: 'Live Software',
+      hint: 'Powers the homepage "Live Software" section.',
+      path: 'live.json',
+      fields: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'tagline', label: 'Tagline', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+        { key: 'link', label: 'Link', type: 'text' },
+        { key: 'domain', label: 'Domain (shown as label)', type: 'text' },
+        { key: 'visible', label: 'Show on homepage', type: 'checkbox' },
+      ],
+      blank: () => ({ title: '', tagline: '', description: '', link: '', domain: '', visible: true }),
+      titleOf: (r) => r.title || 'Untitled',
+    },
+    {
+      id: 'projects',
+      title: 'Featured Projects',
+      hint: 'Powers the homepage "Projects" section.',
+      path: 'projects.json',
+      fields: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+        { key: 'link', label: 'Link', type: 'text' },
+        { key: 'visible', label: 'Show on homepage', type: 'checkbox' },
+      ],
+      blank: () => ({ title: '', description: '', link: '', visible: true }),
+      titleOf: (r) => r.title || 'Untitled',
+    },
+  ];
+
+  const state = {};
+  SECTIONS.forEach((s) => { state[s.id] = { items: null, sha: null, dirty: false }; });
+
+  // ---- Google Identity ----
+
+  function decodeJwt(token) {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(
+      atob(payload).split('').map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+    );
+    return JSON.parse(json);
+  }
+
+  async function handleCredential(response) {
+    let claims;
+    try { claims = decodeJwt(response.credential); } catch { return showDenied('(unreadable token)'); }
+    const now = Date.now() / 1000;
+    if (claims.aud !== GOOGLE_CLIENT_ID || claims.exp < now || !claims.email_verified) return showDenied(claims.email || '(unverified)');
+    const hash = await sha256Hex(claims.email.toLowerCase());
+    if (hash !== ALLOWED_EMAIL_HASH) return showDenied(claims.email);
+    showAdmin(claims.email);
+  }
+
+  function showDenied(email) {
+    $('gate').hidden = true;
+    $('admin').hidden = true;
+    $('denied').hidden = false;
+    $('denied-email').textContent = email;
+    $('nav-status').textContent = '';
+  }
+
+  function showAdmin(email) {
+    $('gate').hidden = true;
+    $('denied').hidden = true;
+    $('admin').hidden = false;
+    $('admin-email').textContent = email;
+    $('nav-status').textContent = email;
+    renderSections();
+  }
+
+  function resetToSignIn() {
+    if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+    location.reload();
+  }
+
+  window.addEventListener('load', () => {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
+      $('gate-config-warning').style.display = 'block';
+      return;
+    }
+    const wait = setInterval(() => {
+      if (!window.google?.accounts?.id) return;
+      clearInterval(wait);
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredential,
+        auto_select: false,
+      });
+      google.accounts.id.renderButton($('g-signin'), { theme: 'outline', size: 'large' });
+    }, 100);
+  });
+
+  $('try-again').addEventListener('click', resetToSignIn);
+  $('sign-out').addEventListener('click', resetToSignIn);
+
+  // ---- GitHub token ----
+
+  function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+  $('gh-token').value = getToken();
+  $('save-token').addEventListener('click', () => {
+    localStorage.setItem(TOKEN_KEY, $('gh-token').value.trim());
+    renderSections();
+  });
+  $('forget-token').addEventListener('click', () => {
+    localStorage.removeItem(TOKEN_KEY);
+    $('gh-token').value = '';
+    renderSections();
+  });
+
+  // ---- GitHub Contents API ----
+
+  function ghHeaders() {
+    return {
+      Authorization: `Bearer ${getToken()}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+  }
+
+  function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function b64decode(str) { return decodeURIComponent(escape(atob(str.replace(/\n/g, '')))); }
+
+  async function loadFile(path) {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURIComponent(path)}?ref=${BRANCH}`, { headers: ghHeaders() });
+    if (!res.ok) throw new Error(`Load failed (${res.status}): ${(await res.json().catch(() => ({}))).message || res.statusText}`);
+    const data = await res.json();
+    return { items: JSON.parse(b64decode(data.content)), sha: data.sha };
+  }
+
+  // A repo-scoped token can still read PUBLIC repo metadata anywhere on
+  // GitHub (public data needs no special access, just a valid token for the
+  // rate limit) — so "last pushed" dates can be fetched live for public
+  // repos. Private repos 404 for a token that isn't scoped to them, so their
+  // date stays whatever was typed in by hand.
+  async function fetchPublicDates(items) {
+    const owner = REPO.split('/')[0];
+    await Promise.all(items.filter((r) => r.visibility === 'public' && r.name).map(async (r) => {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(r.name)}`, { headers: ghHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.pushed_at) r.updated = data.pushed_at.slice(0, 10);
+      } catch { /* one repo failing to resolve shouldn't block the rest */ }
+    }));
+  }
+
+  function sortByUpdatedDesc(items) {
+    return [...items].sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+  }
+
+  async function saveFile(path, items, sha, message) {
+    const content = b64encode(JSON.stringify(items, null, 2) + '\n');
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURIComponent(path)}`, {
+      method: 'PUT',
+      headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, content, sha, branch: BRANCH }),
+    });
+    if (!res.ok) throw new Error(`Save failed (${res.status}): ${(await res.json().catch(() => ({}))).message || res.statusText}`);
+    return res.json();
+  }
+
+  // ---- Publish (one button for every section, one commit per changed file, in order) ----
+
+  let publishingAll = false;
+
+  async function publishAll() {
+    if (publishingAll) return;
+    const dirty = SECTIONS.filter((cfg) => state[cfg.id].dirty && state[cfg.id].items);
+    const barStatus = $('publish-all-status');
+    if (dirty.length === 0) {
+      barStatus.textContent = 'No changes to publish.';
+      barStatus.className = 'status';
+      return;
+    }
+    publishingAll = true;
+    $('publish-all').disabled = true;
+    const results = [];
+    for (const [i, cfg] of dirty.entries()) {
+      barStatus.textContent = `Publishing ${i + 1} of ${dirty.length}: ${cfg.title}…`;
+      barStatus.className = 'status';
+      const sectionStatus = document.getElementById(`status-${cfg.id}`);
+      try {
+        const s = state[cfg.id];
+        const result = await saveFile(cfg.path, s.items, s.sha, `portal: update ${cfg.path}`);
+        s.sha = result.content.sha;
+        s.dirty = false;
+        if (sectionStatus) { sectionStatus.textContent = 'Published ✓'; sectionStatus.className = 'section-status ok'; }
+        results.push({ cfg, ok: true });
+      } catch (e) {
+        if (sectionStatus) { sectionStatus.textContent = e.message; sectionStatus.className = 'section-status bad'; }
+        results.push({ cfg, ok: false, error: e.message });
+      }
+    }
+    publishingAll = false;
+    $('publish-all').disabled = false;
+    const okCount = results.filter((r) => r.ok).length;
+    const failCount = results.length - okCount;
+    barStatus.textContent = failCount === 0
+      ? `Published ${okCount} file${okCount === 1 ? '' : 's'} ✓ — GitHub Pages will rebuild in under a minute.`
+      : `Published ${okCount}, failed ${failCount} — see the failed section${failCount === 1 ? '' : 's'} above.`;
+    barStatus.className = 'status' + (failCount === 0 ? ' ok' : ' bad');
+  }
+
+  $('publish-all').addEventListener('click', publishAll);
+
+  // ---- Rendering ----
+
+  function renderSections() {
+    const container = $('sections');
+    container.innerHTML = '';
+    SECTIONS.forEach((cfg) => container.appendChild(renderSection(cfg)));
+  }
+
+  function renderSection(cfg) {
+    const el = document.createElement('section');
+    el.className = 'data-section';
+    el.innerHTML = `
+      <div class="head">
+        <h2>${cfg.title}</h2>
+        <div class="section-actions">
+          <button data-act="reload">Reload from GitHub</button>
+          <button data-act="add">+ Add entry</button>
+          <span class="section-status" id="status-${cfg.id}"></span>
+        </div>
+      </div>
+      <p>${cfg.hint}</p>
+      <div class="items" id="items-${cfg.id}"></div>
+    `;
+
+    const status = el.querySelector(`#status-${cfg.id}`);
+    const itemsEl = el.querySelector(`#items-${cfg.id}`);
+
+    function setStatus(text, kind) {
+      status.textContent = text;
+      status.className = 'section-status' + (kind ? ' ' + kind : '');
+    }
+
+    async function load() {
+      if (!getToken()) { itemsEl.innerHTML = '<p style="color:var(--muted);font-size:.86rem;">Add a GitHub token above to load this section.</p>'; return; }
+      setStatus('Loading…');
+      try {
+        const { items, sha } = await loadFile(cfg.path);
+        let dirty = false;
+        if (cfg.autoSortOnLoad) {
+          const before = JSON.stringify(items);
+          setStatus('Loading… fetching latest dates from GitHub…');
+          await fetchPublicDates(items);
+          const sorted = sortByUpdatedDesc(items);
+          dirty = JSON.stringify(sorted) !== before;
+          state[cfg.id] = { items: sorted, sha, dirty };
+        } else {
+          state[cfg.id] = { items, sha, dirty: false };
+        }
+        setStatus(dirty ? 'Loaded — dates refreshed, re-sorted. Publish to save this order.' : '');
+        drawItems();
+      } catch (e) {
+        setStatus(e.message, 'bad');
+      }
+    }
+
+    function drawItems() {
+      const s = state[cfg.id];
+      itemsEl.innerHTML = '';
+      if (!s.items) return;
+      s.items.forEach((item, index) => itemsEl.appendChild(renderItem(cfg, item, index, drawItems)));
+    }
+
+    el.querySelector('[data-act="reload"]').addEventListener('click', load);
+    el.querySelector('[data-act="add"]').addEventListener('click', () => {
+      if (!state[cfg.id].items) return;
+      state[cfg.id].items.push(cfg.blank());
+      state[cfg.id].dirty = true;
+      drawItems();
+    });
+
+    attachDragReorder(itemsEl, cfg, drawItems);
+
+    load();
+    return el;
+  }
+
+  // Drag a row's handle onto another row to move it there. Reordering only
+  // changes the in-memory array (and marks the section dirty) — it's just
+  // another edit, saved the same way as any field change, via Publish.
+  function attachDragReorder(itemsEl, cfg, redraw) {
+    let dragIndex = null;
+
+    itemsEl.addEventListener('dragstart', (e) => {
+      const handle = e.target.closest('.drag-handle');
+      if (!handle) { e.preventDefault(); return; }
+      const row = handle.closest('.item');
+      dragIndex = Number(row.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(dragIndex));
+      row.classList.add('dragging');
+    });
+
+    itemsEl.addEventListener('dragend', () => {
+      itemsEl.querySelectorAll('.item').forEach((el) => el.classList.remove('dragging', 'drop-before', 'drop-after'));
+      dragIndex = null;
+    });
+
+    itemsEl.addEventListener('dragover', (e) => {
+      if (dragIndex === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const row = e.target.closest('.item');
+      itemsEl.querySelectorAll('.item').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
+      if (!row) return;
+      const rect = row.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      row.classList.add(before ? 'drop-before' : 'drop-after');
+    });
+
+    itemsEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const row = e.target.closest('.item');
+      itemsEl.querySelectorAll('.item').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'dragging'));
+      if (!row || dragIndex === null) return;
+      const targetIndex = Number(row.dataset.index);
+      if (targetIndex !== dragIndex) {
+        const rect = row.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height / 2;
+        const items = state[cfg.id].items;
+        const [moved] = items.splice(dragIndex, 1);
+        let insertAt = dragIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        if (!before) insertAt += 1;
+        items.splice(Math.max(0, Math.min(items.length, insertAt)), 0, moved);
+        state[cfg.id].dirty = true;
+        redraw();
+      }
+      dragIndex = null;
+    });
+  }
+
+  function renderItem(cfg, item, index, redraw) {
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.dataset.index = String(index);
+
+    const topRow = document.createElement('div');
+    topRow.className = 'item-toprow';
+
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.draggable = true;
+    handle.title = 'Drag to reorder';
+    handle.textContent = '⠿ drag to reorder';
+    topRow.appendChild(handle);
+
+    const total = state[cfg.id].items.length;
+    const posLabel = document.createElement('label');
+    posLabel.className = 'pos-label';
+    posLabel.innerHTML = `# <input type="number" class="pos-input" min="1" max="${total}" value="${index + 1}" title="Type a position and press Enter to jump there">`;
+    posLabel.querySelector('input').addEventListener('change', (e) => {
+      const items = state[cfg.id].items;
+      let target = parseInt(e.target.value, 10);
+      if (!Number.isFinite(target)) { e.target.value = String(index + 1); return; }
+      target = Math.max(1, Math.min(items.length, target)) - 1;
+      if (target === index) { e.target.value = String(index + 1); return; }
+      const [moved] = items.splice(index, 1);
+      items.splice(target, 0, moved);
+      state[cfg.id].dirty = true;
+      redraw();
+    });
+    topRow.appendChild(posLabel);
+
+    row.appendChild(topRow);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    cfg.fields.forEach((f) => {
+      if (f.showIf && !f.showIf(item)) return;
+      const field = document.createElement('div');
+      if (f.type === 'checkbox') {
+        field.className = 'checkbox-field';
+        field.innerHTML = `<input type="checkbox" id="f-${cfg.id}-${index}-${f.key}" ${item[f.key] ? 'checked' : ''}>
+          <label for="f-${cfg.id}-${index}-${f.key}">${f.label}</label>`;
+        field.querySelector('input').addEventListener('change', (e) => {
+          item[f.key] = e.target.checked;
+          state[cfg.id].dirty = true;
+          redraw();
+        });
+      } else if (f.type === 'select') {
+        field.innerHTML = `<label>${f.label}</label>
+          <select>${f.options.map((o) => `<option value="${o}" ${item[f.key] === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+        field.querySelector('select').addEventListener('change', (e) => {
+          item[f.key] = e.target.value;
+          state[cfg.id].dirty = true;
+          redraw();
+        });
+      } else if (f.type === 'textarea') {
+        field.innerHTML = `<label>${f.label}</label><textarea></textarea>`;
+        const ta = field.querySelector('textarea');
+        ta.value = item[f.key] || '';
+        ta.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
+      } else if (f.type === 'date') {
+        field.innerHTML = `<label>${f.label}</label><input type="date">`;
+        const inp = field.querySelector('input');
+        inp.value = item[f.key] || '';
+        inp.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
+      } else {
+        field.innerHTML = `<label>${f.label}</label><input type="text">`;
+        const inp = field.querySelector('input');
+        inp.value = item[f.key] || '';
+        inp.addEventListener('input', (e) => { item[f.key] = e.target.value; state[cfg.id].dirty = true; });
+      }
+      grid.appendChild(field);
+    });
+
+    row.appendChild(grid);
+
+    const foot = document.createElement('div');
+    foot.className = 'row-foot';
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.addEventListener('click', () => {
+      if (!confirm(`Delete "${cfg.titleOf(item)}"? This only takes effect once you click Publish all changes.`)) return;
+      state[cfg.id].items.splice(index, 1);
+      state[cfg.id].dirty = true;
+      redraw();
+    });
+    foot.appendChild(del);
+    row.appendChild(foot);
+
+    return row;
+  }
+})();
+</script>
+</body>
+</html>
