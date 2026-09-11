@@ -48,7 +48,11 @@
   h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -0.01em; margin: 0; font-optical-sizing: none; font-variation-settings: "opsz" 72; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+  /* Full-bleed by request: the page fills the window instead of sitting in a
+     centered column, and text runs the full width with it - no container
+     cap and no per-element line-length caps (see header.hero p.lede below).
+     Only the gutter scales with the viewport. */
+  .wrap { max-width: none; margin: 0; padding: 0 clamp(20px, 4vw, 96px); }
 
   nav {
     position: sticky; top: 0; z-index: 10;
@@ -66,12 +70,14 @@
   header.hero { padding: 96px 0 70px; }
   header.hero .eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 14px; }
   header.hero h1 { font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 1.08; max-width: 14ch; }
-  header.hero p.lede { font-size: 1.1rem; color: var(--muted); max-width: 46ch; margin-top: 20px; }
+  header.hero p.lede { font-size: 1.1rem; color: var(--muted); margin-top: 20px; }
 
   section { padding: 56px 0; border-top: 1px solid var(--border); }
-  section .heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  /* Stacked, not side-by-side: on a full-width page, a title pinned left and
+     a subtitle pinned far right sends your eyes bouncing edge to edge. */
+  section .heading { margin-bottom: 28px; }
   section h2 { font-size: 1.5rem; }
-  section .heading p { color: var(--muted); font-size: .92rem; margin: 0; }
+  section .heading p { color: var(--muted); font-size: .92rem; margin: 6px 0 0; }
 
   .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
   .card {
@@ -237,5 +243,6 @@
   </div>
 </footer>
 
+<script src="/nav.js" defer></script>
 </body>
 </html>
