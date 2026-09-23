@@ -1,0 +1,6 @@
+# The one place the domain lives. index.html, sitemap.xml and robots.txt all
+# read this via {{ site.url }} instead of spelling the domain out themselves,
+# so switching domains is: update this line, update CNAME to match, push.
+# Nothing else in this repo needs to change.
+title: Jaron Wilson
+url: "https://jaronwilson.dev"
