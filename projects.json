@@ -36,6 +36,12 @@
     "visible": true
   },
   {
+    "title": "crossdevice-audio",
+    "description": "One set of AirPods Pro 2 and Skullcandy Crusher controls across a Linux laptop, a Windows PC and an Android phone, with no driver and no root.",
+    "link": "https://github.com/Jaron-Wilson/crossdevice-audio",
+    "visible": true
+  },
+  {
     "title": "Modes",
     "description": "An Android app that makes one phone act like several, switching on your calendar and batching notifications instead of silencing them.",
     "link": "https://github.com/Jaron-Wilson/phone-usage-limiter",
