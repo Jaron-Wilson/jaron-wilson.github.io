@@ -22,5 +22,23 @@
     "description": "A self-hosted AI model server that allows local processing for privacy-focused applications.",
     "link": "https://jaronwilson.dev/local-ai-server/",
     "visible": true
+  },
+  {
+    "title": "Odysseus",
+    "description": "A self-hosted AI workspace I run and extend, with add-on mods for Google Workspace, ChatGPT sign-in, ElevenLabs voice, an ADS-B map and Tailscale.",
+    "link": "https://github.com/Jaron-Wilson/odysseus",
+    "visible": true
+  },
+  {
+    "title": "resolve-mcp-kit",
+    "description": "An MCP server that lets an AI agent drive DaVinci Resolve, plus site-video, which turns a website link into a captioned promo video.",
+    "link": "https://github.com/Jaron-Wilson/resolve-mcp-kit",
+    "visible": true
+  },
+  {
+    "title": "Modes",
+    "description": "An Android app that makes one phone act like several, switching on your calendar and batching notifications instead of silencing them.",
+    "link": "https://github.com/Jaron-Wilson/phone-usage-limiter",
+    "visible": true
   }
 ]
