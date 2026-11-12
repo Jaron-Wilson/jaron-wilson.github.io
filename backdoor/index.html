@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hack The World</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #000;
+            color: #00FF41;
+            text-shadow: 0 0 5px #00FF41, 0 0 10px #00FF41;
+        }
+        .container {
+            border: 2px solid #00FF41;
+            box-shadow: 0 0 15px #00FF41 inset;
+            background-color: rgba(0, 20, 0, 0.7);
+        }
+        .btn {
+            border: 1px solid #00FF41;
+            background-color: #0a290a;
+            transition: all 0.2s;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: #00FF41;
+            color: #000;
+            text-shadow: none;
+        }
+        .btn:disabled {
+            border-color: #005215;
+            color: #005215;
+            text-shadow: none;
+            cursor: not-allowed;
+        }
+        .progress-bar-container {
+            border: 1px solid #00FF41;
+            padding: 2px;
+        }
+        .progress-bar {
+            background-color: #FF0000;
+            text-shadow: none;
+            box-shadow: 0 0 5px #FF0000;
+        }
+        #console-log {
+            height: 150px;
+            background: #050505;
+            border: 1px solid #00FF41;
+            overflow-y: scroll;
+            scroll-behavior: smooth;
+        }
+        /* Blinking cursor effect */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: #00FF41;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            from, to { background-color: transparent }
+            50% { background-color: #00FF41; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container max-w-4xl mx-auto p-4 md:p-6">
+        <!-- HEADER -->
+        <div class="text-center mb-4">
+            <h1 class="text-4xl md:text-5xl">> HACK THE WORLD_</h1>
+            <p class="text-lg">> an idle game_</p>
+        </div>
+
+        <!-- STATS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-lg">
+            <div class="border p-2 text-center">
+                <h2>CRED: $<span id="cred-display">0</span></h2>
+            </div>
+            <div class="border p-2 text-center">
+                <h2>CRED/SEC: <span id="cps-display">0</span></h2>
+            </div>
+            <div class="border p-2 text-center">
+                <h2>TRACE LVL: <span id="trace-display">0</span>%</h2>
+            </div>
+        </div>
+        <div class="progress-bar-container mb-6">
+            <div id="trace-bar" class="progress-bar h-4" style="width: 0%;"></div>
+        </div>
+
+        <!-- MAIN ACTION -->
+        <div class="text-center mb-6">
+            <button id="manual-hack-btn" class="btn text-2xl px-8 py-4">
+                > manual_hack()
+            </button>
+        </div>
+
+        <!-- UPGRADES & CONSOLE -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- UPGRADES -->
+            <div>
+                <h3 class="text-2xl mb-2">> UPGRADE_STORE_</h3>
+                <div id="upgrades-container" class="space-y-2">
+                    <!-- Upgrades will be dynamically inserted here -->
+                </div>
+            </div>
+            <!-- CONSOLE -->
+            <div>
+                <h3 class="text-2xl mb-2">> SYS_CONSOLE_</h3>
+                <div id="console-log" class="p-2 space-y-1 text-sm">
+                    <!-- Log messages will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        let cred = 0;
+        let credPerSecond = 0;
+        let trace = 0;
+        let manualHackValue = 1;
+
+        // --- DOM ELEMENTS ---
+        const credDisplay = document.getElementById('cred-display');
+        const cpsDisplay = document.getElementById('cps-display');
+        const traceDisplay = document.getElementById('trace-display');
+        const traceBar = document.getElementById('trace-bar');
+        const manualHackBtn = document.getElementById('manual-hack-btn');
+        const upgradesContainer = document.getElementById('upgrades-container');
+        const consoleLog = document.getElementById('console-log');
+
+        // --- UPGRADES DATA ---
+        const upgrades = [
+            { id: 'proxy', name: 'Basic Proxy', cost: 10, effect: { type: 'cps', value: 1 }, purchased: 0 },
+            { id: 'script', name: 'Script Kiddie Toolkit', cost: 50, effect: { type: 'manual', value: 2 }, purchased: 0 },
+            { id: 'botnet', name: 'Deploy Botnet', cost: 100, effect: { type: 'cps', value: 5 }, purchased: 0 },
+            { id: 'vpn', name: 'Encrypted VPN', cost: 250, effect: { type: 'trace_decay', value: 0.1 }, purchased: 0 },
+            { id: 'zero_day', name: 'Zero-Day Exploit', cost: 1000, effect: { type: 'cps', value: 25 }, purchased: 0 },
+            { id: 'ice', name: 'ICE Breaker', cost: 5000, effect: { type: 'manual', value: 50 }, purchased: 0 },
+            { id: 'quantum', name: 'Quantum Computer', cost: 25000, effect: { type: 'cps', value: 200 }, purchased: 0 },
+        ];
+
+        // --- GAME LOGIC ---
+        function manualHack() {
+            cred += manualHackValue;
+            trace += 0.5;
+            logToConsole(`> Executed manual_hack(). +$${manualHackValue} CRED. +0.5% TRACE.`);
+            updateUI();
+        }
+
+        function buyUpgrade(upgradeId) {
+            const upgrade = upgrades.find(u => u.id === upgradeId);
+            if (!upgrade || cred < upgrade.cost) {
+                logToConsole(`> ERR: INSUFFICIENT CRED FOR ${upgrade.name.toUpperCase()}`);
+                return;
+            }
+
+            cred -= upgrade.cost;
+            upgrade.purchased++;
+            upgrade.cost = Math.ceil(upgrade.cost * 1.5); // Increase cost for next purchase
+
+            // Apply effect
+            if (upgrade.effect.type === 'cps') {
+                credPerSecond += upgrade.effect.value;
+            } else if (upgrade.effect.type === 'manual') {
+                manualHackValue += upgrade.effect.value;
+            }
+            
+            logToConsole(`> PURCHASED: ${upgrade.name.toUpperCase()}.`);
+            renderUpgrades();
+            updateUI();
+        }
+
+        function gameLoop() {
+            cred += credPerSecond;
+            
+            // Apply trace decay from upgrades
+            const traceDecayRate = upgrades
+                .filter(u => u.effect.type === 'trace_decay' && u.purchased > 0)
+                .reduce((total, u) => total + u.effect.value * u.purchased, 0);
+
+            trace = Math.max(0, trace - (0.2 + traceDecayRate)); // Base decay + upgrade decay
+
+            if (trace >= 100) {
+                gameOver();
+            }
+
+            updateUI();
+        }
+
+        function gameOver() {
+            document.body.innerHTML = `
+                <div class="container max-w-4xl mx-auto p-6 text-center text-red-500">
+                    <h1 class="text-6xl mb-4">> TRACE COMPLETE <</h1>
+                    <h2 class="text-4xl mb-8">> CONNECTION TERMINATED <</h2>
+                    <p class="text-2xl mb-8">You got too greedy. The Feds are at your door.</p>
+                    <button onclick="location.reload()" class="btn text-2xl px-8 py-4">> REBOOT_SESSION_</button>
+                </div>
+            `;
+            clearInterval(gameInterval);
+        }
+
+        // --- UI & RENDERING ---
+        function updateUI() {
+            credDisplay.textContent = Math.floor(cred).toLocaleString();
+            cpsDisplay.textContent = credPerSecond.toLocaleString();
+            traceDisplay.textContent = trace.toFixed(1);
+            traceBar.style.width = `${trace}%`;
+
+            // Update button states
+            upgrades.forEach(upgrade => {
+                const btn = document.getElementById(`upgrade-${upgrade.id}`);
+                if (btn) {
+                    btn.disabled = cred < upgrade.cost;
+                }
+            });
+        }
+
+        function renderUpgrades() {
+            upgradesContainer.innerHTML = '';
+            upgrades.forEach(upgrade => {
+                upgradesContainer.innerHTML += `
+                    <button id="upgrade-${upgrade.id}" onclick="buyUpgrade('${upgrade.id}')" class="btn w-full text-left p-2">
+                        > ${upgrade.name} [${upgrade.purchased}]<br>
+                        > COST: $${upgrade.cost.toLocaleString()} | EFFECT: +${upgrade.effect.value} ${upgrade.effect.type.toUpperCase()}
+                    </button>
+                `;
+            });
+        }
+
+        function logToConsole(message) {
+            const logEntry = document.createElement('p');
+            logEntry.innerHTML = `${message}<span class="cursor"></span>`;
+            
+            const existingCursor = consoleLog.querySelector('.cursor');
+            if(existingCursor) existingCursor.remove();
+
+            consoleLog.appendChild(logEntry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        // --- INITIALIZATION ---
+        manualHackBtn.addEventListener('click', manualHack);
+        renderUpgrades();
+        logToConsole("> System Online. Standby for commands...");
+        const gameInterval = setInterval(gameLoop, 1000);
+        updateUI();
+
+    </script>
+</body>
+</html>
