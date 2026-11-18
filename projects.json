@@ -1,5 +1,11 @@
 [
   {
+    "title": "vs-labs-linux",
+    "description": "Do your Visual Studio C++ labs on Linux and still hand in a normal Visual Studio solution zip. It builds with Microsoft's real MSVC compiler under Wine and writes the exact project files Visual Studio does. No dual boot, no VM.",
+    "link": "https://jaronwilson.dev/vs-labs-linux/",
+    "visible": true
+  },
+  {
     "title": "Pokemon Integrations Report Visualizer",
     "description": "An interactive tool for visualizing integrations in real time.",
     "link": "/integrations/visualizer/",
