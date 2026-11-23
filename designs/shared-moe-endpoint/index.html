@@ -13,11 +13,13 @@
   :root {
     --paper: #faf8f4; --surface: #ffffff; --ink: #1a1a17; --muted: #6b6862;
     --border: #e8e4dc; --accent: #b3542b; --accent-ink: #ffffff;
+    --mark: #b3542b; --grid: #ebe7df; --zone: rgba(107,104,98,.10);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --paper: #17150f; --surface: #201d16; --ink: #ede9e0; --muted: #a39d8f;
       --border: #35322a; --accent: #d97a4a;
+      --mark: #d4733f; --grid: #2c2920; --zone: rgba(163,157,143,.12);
     }
   }
   * { box-sizing: border-box; }
@@ -35,6 +37,24 @@
   .mermaid { display: flex; justify-content: center; }
   ol li, ul li { margin: 6px 0; }
   .note { border-left: 4px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 8px; color: var(--ink); }
+  .sim { margin: 18px 0; }
+  .sim-ctl { display: block; font-weight: 500; margin-bottom: 6px; }
+  .sim input[type=range] { width: 100%; accent-color: var(--accent); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .tile .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .tile .v { font-family: Fraunces, Georgia, serif; font-size: 40px; font-weight: 600; line-height: 1.15; }
+  .tile .v small { font-family: Inter, sans-serif; font-size: 15px; color: var(--muted); font-weight: 500; }
+  .tile .d { color: var(--muted); font-size: 13px; }
+  figure.chart { position: relative; padding: 16px 14px 10px; }
+  .ctitle { font-weight: 600; font-size: 15px; margin: 0 0 6px 4px; }
+  .ctitle .unit { color: var(--muted); font-weight: 400; }
+  figure.chart svg { width: 100%; height: 270px; display: block; overflow: visible; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; }
+  details.tbl { margin-top: 8px; }
+  details.tbl table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+  details.tbl th, details.tbl td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  details.tbl th:first-child, details.tbl td:first-child { text-align: left; }
   footer { margin-top: 64px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); padding-top: 18px; }
 </style>
 </head>
@@ -119,13 +139,34 @@ flowchart TB
     <figcaption>Task-level experts: one base model in memory, many small specialists sharing it.</figcaption>
   </figure>
 
-  <h2>What 20 users should feel</h2>
-  <ul>
-    <li><strong>One person alone:</strong> fast, roughly 40 to 70 words per second.</li>
-    <li><strong>Twenty at once:</strong> each still gets roughly 15 to 30 words per second, faster than reading speed, and the first words arrive within a second or two.</li>
-    <li><strong>The only cost of a busy server</strong> is that words arrive a little slower for everyone, never that someone is stuck behind the others.</li>
-  </ul>
-  <p class="note">These are estimates to be measured. The plan is a load test with 20 simulated users sending real agent-style tasks with tool calls, compared against the current models on speed, time to first word, failures and answer quality.</p>
+  <h2>Where the speed goes as people join</h2>
+  <p>Every step the GPUs write one new token (roughly a word) for every active conversation. A step gets a little longer with each extra person, so each person's speed drops slowly while the total the server produces keeps climbing. Once the conversation memory is full, extra requests wait in line instead of slowing everyone further.</p>
+
+  <div class="sim">
+    <label class="sim-ctl" for="users">People using it at once: <strong id="usersOut">20</strong></label>
+    <input id="users" type="range" min="1" max="40" value="20" aria-describedby="usersOut">
+    <div class="tiles">
+      <div class="tile"><div class="k">Each person gets</div><div class="v"><span id="tPer">20</span><small> tokens/s</small></div><div class="d" id="tPerNote"></div></div>
+      <div class="tile"><div class="k">Everyone combined</div><div class="v"><span id="tAll">410</span><small> tokens/s</small></div><div class="d">what the server writes in total</div></div>
+      <div class="tile"><div class="k">Waiting in line</div><div class="v"><span id="tWait">0</span></div><div class="d" id="tWaitNote">memory has room</div></div>
+    </div>
+
+    <figure class="chart">
+      <div class="ctitle">Speed each person gets <span class="unit">(tokens per second)</span></div>
+      <svg id="cPer" role="img" aria-label="Line chart: tokens per second for each person as the number of people grows"></svg>
+      <div class="tip" id="tipPer" hidden></div>
+    </figure>
+    <figure class="chart">
+      <div class="ctitle">Everyone combined <span class="unit">(tokens per second, whole server)</span></div>
+      <svg id="cAll" role="img" aria-label="Line chart: total tokens per second for the whole server as the number of people grows"></svg>
+      <div class="tip" id="tipAll" hidden></div>
+    </figure>
+
+    <details class="tbl"><summary>Show as a table</summary>
+      <table id="simTable"><thead><tr><th>People</th><th>Each person (tokens/s)</th><th>Combined (tokens/s)</th><th>Waiting</th></tr></thead><tbody></tbody></table>
+    </details>
+  </div>
+  <p class="note"><strong>This is a model, not a measurement yet.</strong> Assumptions: one generation step takes about 17 ms plus about 1.6 ms for each active conversation (typical for a mixture-of-experts model that uses a few billion parameters per token on three RTX 3090s), and the memory pool holds about 24 conversations of around 16k tokens each. Longer conversations mean fewer fit before the line starts. The planned load test will replace these curves with real numbers.</p>
 
   <footer>Jaron Wilson &middot; design notes, November 2026</footer>
 </main>
@@ -134,6 +175,83 @@ flowchart TB
   const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "strict",
                        flowchart: { htmlLabels: true, curve: "basis" } });
+</script>
+<script>
+(function () {
+  // Illustrative model (see note under the charts): step = BASE + PER * active; each active request gets 1 token/step.
+  var BASE = 17, PER = 1.6, CAP = 24, MAXU = 40, READ = 5;
+  function at(n) {
+    var active = Math.min(n, CAP), step = BASE + PER * active, each = 1000 / step;
+    return { n: n, each: each, all: each * active, wait: Math.max(0, n - CAP) };
+  }
+  var data = []; for (var i = 1; i <= MAXU; i++) data.push(at(i));
+  var NS = "http://www.w3.org/2000/svg";
+  function el(t, a, p) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  var charts = [];
+  function draw(svgId, tipId, key, yMax, yStep, refLine, fmtTip) {
+    var svg = document.getElementById(svgId), tip = document.getElementById(tipId);
+    var W = svg.clientWidth || 700, H = 270, L = 44, R = 14, T = 10, B = 44;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.innerHTML = "";
+    var x = function (n) { return L + (n - 1) / (MAXU - 1) * (W - L - R); };
+    var y = function (v) { return T + (1 - v / yMax) * (H - T - B); };
+    var ink = css("--muted"), grid = css("--grid"), mark = css("--mark");
+    // memory-full zone
+    el("rect", { x: x(CAP), y: T, width: x(MAXU) - x(CAP), height: H - T - B, fill: css("--zone") }, svg);
+    var zl = el("text", { x: x(CAP) + 6, y: T + 14, fill: ink, "font-size": 12 }, svg); zl.textContent = "Memory full: extra people wait in line";
+    for (var v = 0; v <= yMax; v += yStep) {
+      el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: grid, "stroke-width": 1 }, svg);
+      var t = el("text", { x: L - 8, y: y(v) + 4, fill: ink, "font-size": 12, "text-anchor": "end" }, svg); t.textContent = v.toLocaleString();
+    }
+    [1, 10, 20, 30, 40].forEach(function (n) { var t = el("text", { x: x(n), y: H - 26, fill: ink, "font-size": 12, "text-anchor": "middle" }, svg); t.textContent = n; });
+    var xl = el("text", { x: (L + W - R) / 2, y: H, fill: ink, "font-size": 12, "text-anchor": "middle" }, svg); xl.textContent = "People using it at once";
+    if (refLine) {
+      el("line", { x1: L, x2: W - R, y1: y(refLine), y2: y(refLine), stroke: ink, "stroke-width": 1 }, svg);
+      var rl = el("text", { x: L + 6, y: y(refLine) - 6, fill: ink, "font-size": 12 }, svg); rl.textContent = "Reading speed, about " + refLine + " tokens/s";
+    }
+    var pts = data.map(function (d) { return x(d.n) + "," + y(d[key]); });
+    el("polygon", { points: x(1) + "," + y(0) + " " + pts.join(" ") + " " + x(MAXU) + "," + y(0), fill: mark, "fill-opacity": .1 }, svg);
+    el("polyline", { points: pts.join(" "), fill: "none", stroke: mark, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    var cross = el("line", { y1: T, y2: H - B, stroke: ink, "stroke-width": 1, visibility: "hidden" }, svg);
+    var dot = el("circle", { r: 5, fill: mark, stroke: css("--surface"), "stroke-width": 2 }, svg);
+    var hit = el("rect", { x: L, y: T, width: W - L - R, height: H - T - B, fill: "transparent" }, svg);
+    function nearest(evt) { var r = svg.getBoundingClientRect(), px = (evt.clientX - r.left) * W / r.width; return Math.max(1, Math.min(MAXU, Math.round((px - L) / (W - L - R) * (MAXU - 1) + 1))); }
+    hit.addEventListener("pointermove", function (evt) {
+      var d = data[nearest(evt) - 1]; cross.setAttribute("x1", x(d.n)); cross.setAttribute("x2", x(d.n)); cross.setAttribute("visibility", "visible");
+      tip.hidden = false; tip.innerHTML = fmtTip(d);
+      var r = svg.getBoundingClientRect(), fx = x(d.n) * r.width / W;
+      tip.style.left = Math.min(r.width - tip.offsetWidth, Math.max(0, fx + 12)) + "px"; tip.style.top = (y(d[key]) * r.height / H) + "px";
+    });
+    hit.addEventListener("pointerleave", function () { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+    return { set: function (n) { var d = data[n - 1]; dot.setAttribute("cx", x(d.n)); dot.setAttribute("cy", y(d[key])); } };
+  }
+  function f0(v) { return Math.round(v).toLocaleString(); }
+  function wait(d) { return d.wait ? d.wait + " waiting" : "no one waiting"; }
+  function build() {
+    charts = [
+      draw("cPer", "tipPer", "each", 60, 10, READ, function (d) { return "<strong>" + d.n + " people</strong><br>" + f0(d.each) + " tokens/s each<br>" + wait(d); }),
+      draw("cAll", "tipAll", "all", 500, 100, 0, function (d) { return "<strong>" + d.n + " people</strong><br>" + f0(d.all) + " tokens/s combined<br>" + wait(d); })
+    ];
+    update();
+  }
+  var slider = document.getElementById("users");
+  function update() {
+    var n = +slider.value, d = data[n - 1];
+    document.getElementById("usersOut").textContent = n;
+    document.getElementById("tPer").textContent = f0(d.each);
+    document.getElementById("tPerNote").textContent = d.each >= 4 * READ ? "about " + Math.round(d.each / READ) + "x reading speed" : "still faster than reading";
+    document.getElementById("tAll").textContent = f0(d.all);
+    document.getElementById("tWait").textContent = d.wait;
+    document.getElementById("tWaitNote").textContent = d.wait ? "they start as soon as someone finishes" : "memory has room";
+    charts.forEach(function (c) { c.set(n); });
+  }
+  slider.addEventListener("input", update);
+  var tb = document.querySelector("#simTable tbody");
+  data.forEach(function (d) { if (d.n === 1 || d.n % 4 === 0) { var r = tb.insertRow(); [d.n, f0(d.each), f0(d.all), d.wait].forEach(function (v) { r.insertCell().textContent = v; }); } });
+  build();
+  window.addEventListener("resize", build);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", build);
+})();
 </script>
 <script src="/nav.js" defer></script>
 </body>
