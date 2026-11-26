@@ -1,0 +1,56 @@
+[
+  {
+    "title": "vs-labs-linux",
+    "description": "Do your Visual Studio C++ labs on Linux and still hand in a normal Visual Studio solution zip. It builds with Microsoft's real MSVC compiler under Wine and writes the exact project files Visual Studio does. No dual boot, no VM.",
+    "link": "https://jaronwilson.dev/vs-labs-linux/",
+    "visible": true
+  },
+  {
+    "title": "Pokemon Integrations Report Visualizer",
+    "description": "An interactive tool for visualizing integrations in real time.",
+    "link": "/integrations/visualizer/",
+    "visible": true
+  },
+  {
+    "title": "Doc Editor",
+    "description": "A lightweight document editor.",
+    "link": "/doc/",
+    "visible": true
+  },
+  {
+    "title": "Blokus AI",
+    "description": "A powerful AI designed to play the game of Blokus with strategic decision-making capabilities.",
+    "link": "https://jaronwilson.dev/Blokus-ai/",
+    "visible": true
+  },
+  {
+    "title": "Local AI Server",
+    "description": "A self-hosted AI model server that allows local processing for privacy-focused applications.",
+    "link": "https://jaronwilson.dev/local-ai-server/",
+    "visible": true
+  },
+  {
+    "title": "Odysseus",
+    "description": "A self-hosted AI workspace I run and extend, with add-on mods for Google Workspace, ChatGPT sign-in, ElevenLabs voice, an ADS-B map and Tailscale.",
+    "link": "https://github.com/Jaron-Wilson/odysseus",
+    "visible": true
+  },
+  {
+    "title": "resolve-mcp-kit",
+    "description": "An MCP server that lets an AI agent drive DaVinci Resolve, plus site-video, which turns a website link into a captioned promo video.",
+    "link": "https://github.com/Jaron-Wilson/resolve-mcp-kit",
+    "visible": true
+  },
+  {
+    "title": "crossdevice-audio",
+    "description": "One set of AirPods Pro 2 and Skullcandy Crusher controls across a Linux laptop, a Windows PC and an Android phone, with no driver and no root.",
+    "link": "https://github.com/Jaron-Wilson/crossdevice-audio",
+    "visible": true
+  },
+  {
+    "title": "Modes",
+    "description": "An Android app that makes one phone act like several, switching on your calendar and batching notifications instead of silencing them.",
+    "link": "https://github.com/Jaron-Wilson/phone-usage-limiter",
+    "visible": true
+  }
+]

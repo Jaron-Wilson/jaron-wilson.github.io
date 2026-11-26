@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostOS v1.3.37</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #0d0d0d;
+            color: #00ff00;
+        }
+        #terminal {
+            background: #000;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            height: 95vh;
+            overflow-y: auto;
+            padding: 10px;
+            cursor: text; /* Change cursor to text to indicate it's typeable */
+        }
+        #terminal::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .crt-scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: scanline 10s linear infinite;
+        }
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
+        .input-line {
+            display: flex;
+            align-items: center;
+        }
+        #command-text {
+            white-space: pre-wrap;
+        }
+        .cursor {
+            background: #00ff00;
+            width: 10px;
+            height: 1.2em; /* Match font height */
+            display: inline-block;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        #api-key-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #00ff00;
+            width: 50%;
+        }
+    </style>
+</head>
+<body class="p-2">
+    <div id="terminal" tabindex="0"> <!-- Make terminal focusable -->
+        <div id="output"></div>
+        <div id="api-key-section">
+            <div>Enter your Gemini API Key to boot the system:</div>
+            <div class="input-line">
+                <span>> </span>
+                <input type="password" id="api-key-input">
+            </div>
+        </div>
+        <div id="input-line" class="input-line" style="display: none;">
+            <span id="prompt">> ghost@local:~$&nbsp;</span>
+            <span id="command-text"></span>
+            <div class="cursor"></div>
+        </div>
+    </div>
+    <div class="crt-scanline"></div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const output = document.getElementById('output');
+        const commandText = document.getElementById('command-text');
+        const promptEl = document.getElementById('prompt');
+        const inputLine = document.getElementById('input-line');
+        const apiKeySection = document.getElementById('api-key-section');
+        const apiKeyInput = document.getElementById('api-key-input');
+
+        // --- Global State ---
+        let USER_API_KEY = "";
+        let currentDir = 'home';
+        let history = [];
+        let historyIndex = -1;
+        let isExecuting = false;
+
+        // --- Fake File System ---
+        const fs = {
+            'home': { type: 'dir', children: ['documents', 'downloads', 'bin'] },
+            'documents': { type: 'dir', parent: 'home', children: ['readme.txt'] },
+            'readme.txt': { type: 'file', parent: 'documents', content: 'Welcome to GhostOS. Type "help" for a list of commands.' },
+            'downloads': { type: 'dir', parent: 'home', children: ['ice_breaker.exe'] },
+            'ice_breaker.exe': { type: 'file', parent: 'downloads', decompile: 'a 90s movie-style ICE breaker that bypasses firewalls and extracts data' },
+            'bin': { type: 'dir', parent: 'home', children: ['kernel_check.bin'] },
+            'kernel_check.bin': { type: 'file', parent: 'bin', decompile: 'a system kernel integrity scan that checks for memory corruption' }
+        };
+
+        // --- Core Functions ---
+        const typeEffect = (element, text, speed = 10, callback) => {
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i).replace(/\n/g, '<br>');
+                    i++;
+                    terminal.scrollTop = terminal.scrollHeight;
+                    setTimeout(type, speed);
+                } else if (callback) {
+                    callback();
+                }
+            }
+            type();
+        };
+
+        const print = (text, isHtml = false) => {
+            const line = document.createElement('div');
+            if (isHtml) {
+                line.innerHTML = text;
+            } else {
+                line.textContent = text;
+            }
+            output.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        };
+        
+        const printCommand = (cmd) => {
+            print(`> ghost@local:~/${currentDir}$ ${cmd}`);
+        }
+
+        const resetInput = () => {
+            inputLine.style.display = 'flex';
+            commandText.textContent = '';
+            isExecuting = false;
+            terminal.focus();
+            terminal.scrollTop = terminal.scrollHeight;
+        };
+
+        // --- Command Handler ---
+        const commands = {
+            help: () => {
+                print('Available commands:');
+                print('  help              - Show this list');
+                print('  ls                - List files in the current directory');
+                print('  cd [dir]          - Change directory');
+                print('  cat [file]        - Display file content');
+                print('  decompile [file]  - [AI] Simulate running a program file');
+                print('  clear             - Clear the terminal screen');
+            },
+            clear: () => {
+                output.innerHTML = '';
+            },
+            ls: () => {
+                const children = fs[currentDir].children;
+                if (children && children.length > 0) {
+                    print(children.join('   '));
+                } else {
+                    print('');
+                }
+            },
+            cd: (args) => {
+                const dir = args[0];
+                if (!dir) {
+                    currentDir = 'home';
+                } else if (dir === '..') {
+                    currentDir = fs[currentDir].parent || currentDir;
+                } else if (fs[currentDir].children.includes(dir) && fs[dir].type === 'dir') {
+                    currentDir = dir;
+                } else {
+                    print(`cd: no such directory: ${dir}`);
+                }
+                promptEl.innerHTML = `> ghost@local:~/${currentDir}$&nbsp;`;
+            },
+            cat: (args) => {
+                const file = args[0];
+                if (fs[currentDir].children.includes(file) && fs[file].type === 'file' && fs[file].content) {
+                    print(fs[file].content);
+                } else {
+                    print(`cat: no such file: ${file}`);
+                }
+            },
+            decompile: async (args) => {
+                if (!USER_API_KEY) {
+                    print("ERROR: API key not set. Please refresh and enter your key.");
+                    return;
+                }
+
+                const file = args[0];
+                if (fs[currentDir].children.includes(file) && fs[file].decompile) {
+                    print(`Executing ${file}...`);
+                    isExecuting = true;
+                    inputLine.style.display = 'none';
+
+                    try {
+                        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${USER_API_KEY}`;
+                        const prompt = `You are a script generator for a retro hacker terminal simulator. A user wants to run a program called '${file}'. The program is described as: '${fs[file].decompile}'. Generate a realistic, line-by-line output log of this program running. Use the format [SLEEP:ms] on its own line to indicate a pause, where 'ms' is the duration in milliseconds. The output should be dramatic and look like it's from a 90s hacker movie. Do not include any explanation, just the output log.`;
+                        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                        
+                        const result = await response.json();
+                        const executionLog = result.candidates[0].content.parts[0].text;
+                        
+                        const steps = executionLog.split(/(\[SLEEP:\d+\])/g).filter(Boolean);
+                        
+                        async function processSteps(index) {
+                            if (index >= steps.length) {
+                                print(`\nExecution of ${file} complete.`);
+                                resetInput();
+                                return;
+                            }
+                            
+                            let currentStep = steps[index].trim();
+                            const sleepMatch = currentStep.match(/\[SLEEP:(\d+)\]/);
+
+                            if (sleepMatch) {
+                                const duration = parseInt(sleepMatch[1], 10);
+                                setTimeout(() => processSteps(index + 1), duration);
+                            } else {
+                                const textEl = document.createElement('div');
+                                output.appendChild(textEl);
+                                typeEffect(textEl, currentStep, 20, () => processSteps(index + 1));
+                            }
+                        }
+                        
+                        processSteps(0);
+
+                    } catch (error) {
+                        print(`EXECUTION FAILED: ${error.message}`);
+                        resetInput();
+                    }
+                } else {
+                    print(`decompile: cannot execute '${file}'`);
+                }
+            }
+        };
+
+        // --- Event Listeners ---
+        apiKeyInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                USER_API_KEY = apiKeyInput.value.trim();
+                if (USER_API_KEY) {
+                    apiKeySection.style.display = 'none';
+                    print("API Key accepted. Booting GhostOS...");
+                    setTimeout(() => {
+                        output.innerHTML = ''; // Clear the boot messages
+                        const welcomeMessage = `GhostOS v1.3.37 (GNU/Linux 4.4.0-116-generic x86_64)\n\n* Documentation:  https://ja-ron.live/mainframe\n* Support:        https://github.com/operator\n\nLast login: ${new Date().toString()}\nWelcome, user. Type 'help' to begin.\n`;
+                        typeEffect(output, welcomeMessage, 20, () => {
+                            resetInput();
+                        });
+                    }, 1000);
+                } else {
+                    print("Invalid API Key. Please try again.");
+                }
+            }
+        });
+
+        terminal.addEventListener('keydown', (e) => {
+            if (isExecuting || apiKeySection.style.display !== 'none') return;
+
+            e.preventDefault(); // Prevent default actions for most keys
+
+            const key = e.key;
+            let currentCommand = commandText.textContent;
+
+            if (key.length === 1) {
+                commandText.textContent += key;
+            } else if (key === 'Backspace') {
+                commandText.textContent = currentCommand.slice(0, -1);
+            } else if (key === 'Enter') {
+                if (currentCommand) {
+                    printCommand(currentCommand);
+                    history.unshift(currentCommand);
+                    historyIndex = -1;
+                    const [cmd, ...args] = currentCommand.split(' ');
+                    if (commands[cmd]) {
+                        commands[cmd](args);
+                    } else {
+                        print(`command not found: ${cmd}`);
+                    }
+                } else {
+                     printCommand('');
+                }
+                
+                if (!isExecuting) {
+                    commandText.textContent = '';
+                }
+
+            } else if (key === 'ArrowUp') {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    commandText.textContent = history[historyIndex];
+                }
+            } else if (key === 'ArrowDown') {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    commandText.textContent = history[historyIndex];
+                } else {
+                    historyIndex = -1;
+                    commandText.textContent = '';
+                }
+            }
+        });
+
+        // --- Startup ---
+        terminal.focus(); // Focus the terminal on load
+        apiKeyInput.focus();
+
+    </script>
+</body>
+</html>

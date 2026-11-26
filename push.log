@@ -1,0 +1,6 @@
+remote: warning: See https://gh.io/lfs for more information.        
+remote: warning: File my-app/node_modules/.cache/default-development/0.pack is 93.11 MB; this is larger than GitHub's recommended maximum file size of 50.00 MB        
+remote: warning: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.        
+To https://github.com/Jaron-Wilson/jaron-wilson.github.io.git
+ ! [remote rejected]   update-website-design -> update-website-design (cannot lock ref 'refs/heads/update-website-design': reference already exists)
+error: failed to push some refs to 'https://github.com/Jaron-Wilson/jaron-wilson.github.io.git'

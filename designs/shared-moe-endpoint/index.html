@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Endpoint, Many Agents - Jaron Wilson</title>
+<meta name="description" content="Design notes: serving one large mixture-of-experts model from a single endpoint to 20 people and subagents at once, with continuous batching.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #faf8f4; --surface: #ffffff; --ink: #1a1a17; --muted: #6b6862;
+    --border: #e8e4dc; --accent: #b3542b; --accent-ink: #ffffff;
+    --mark: #b3542b; --grid: #ebe7df; --zone: rgba(107,104,98,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #17150f; --surface: #201d16; --ink: #ede9e0; --muted: #a39d8f;
+      --border: #35322a; --accent: #d97a4a;
+      --mark: #d4733f; --grid: #2c2920; --zone: rgba(163,157,143,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.65 Inter, system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 22px 80px; }
+  a { color: var(--accent); }
+  .back { font-size: 14px; text-decoration: none; }
+  h1, h2 { font-family: Fraunces, Georgia, serif; font-weight: 600; line-height: 1.2; }
+  h1 { font-size: 40px; margin: 18px 0 8px; }
+  h2 { font-size: 26px; margin: 48px 0 10px; }
+  .lede { color: var(--muted); font-size: 19px; margin-top: 0; }
+  .tag { display: inline-block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  figure { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 16px; margin: 18px 0; overflow-x: auto; }
+  figcaption { color: var(--muted); font-size: 14px; margin-top: 10px; text-align: center; }
+  .mermaid { display: flex; justify-content: center; }
+  ol li, ul li { margin: 6px 0; }
+  .note { border-left: 4px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 8px; color: var(--ink); }
+  .sim { margin: 18px 0; }
+  .sim-ctl { display: block; font-weight: 500; margin-bottom: 6px; }
+  .sim input[type=range] { width: 100%; accent-color: var(--accent); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .tile .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .tile .v { font-family: Fraunces, Georgia, serif; font-size: 40px; font-weight: 600; line-height: 1.15; }
+  .tile .v small { font-family: Inter, sans-serif; font-size: 15px; color: var(--muted); font-weight: 500; }
+  .tile .d { color: var(--muted); font-size: 13px; }
+  figure.chart { position: relative; padding: 16px 14px 10px; }
+  .ctitle { font-weight: 600; font-size: 15px; margin: 0 0 6px 4px; }
+  .ctitle .unit { color: var(--muted); font-weight: 400; }
+  figure.chart svg { width: 100%; height: 270px; display: block; overflow: visible; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; }
+  details.tbl { margin-top: 8px; }
+  details.tbl table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+  details.tbl th, details.tbl td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  details.tbl th:first-child, details.tbl td:first-child { text-align: left; }
+  footer { margin-top: 64px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); padding-top: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">&larr; jaronwilson.dev</a>
+  <div class="tag" style="display:block;margin-top:22px">Design notes</div>
+  <h1>One endpoint, many agents</h1>
+  <p class="lede">How a single large mixture-of-experts model, spread across three GPUs, can answer 20 people and subagents at the same time from one address, and keep taking new requests while it works.</p>
+
+  <h2>The idea</h2>
+  <p>Instead of running a separate model for every app, agent and person, load one big model once and put it behind one endpoint. A gateway in front gives every person their own key and tracks usage. Behind it, a model server batches every active request together on the GPUs.</p>
+  <p>A mixture-of-experts (MoE) model fits this well. It can be large in total (80 to 120 billion parameters) while only using a few billion of them for each word it writes, so it stays fast, and many users cost far less than many separate models.</p>
+
+  <h2>The whole system</h2>
+  <figure>
+<pre class="mermaid">
+flowchart TB
+  U1[Person A] --> G
+  U2[Person B] --> G
+  U3[Subagents x 18] --> G
+  G[Gateway: one endpoint, a key per person, usage log] --> S
+  subgraph Server[Model server, 3 x RTX 3090]
+    S[Scheduler] --> Q[Waiting line]
+    Q -->|room in memory| AB[Active batch]
+    AB --> M[Large MoE model across 3 GPUs: one step = one new word for every active request]
+    M --> AB
+    AB -->|finished| D[Done: answer sent back]
+    KV[Conversation memory pool, split into small blocks] --- AB
+  end
+  D --> G
+</pre>
+    <figcaption>Everyone talks to one address. The gateway handles keys and usage; the server handles the GPUs.</figcaption>
+  </figure>
+
+  <h2>New requests join mid-flight</h2>
+  <p>The model does not run a batch from start to finish. It works in tiny steps, one new word for every active conversation per step, a few hundredths of a second each. Before every step the scheduler can add new requests and drop finished ones. This is called continuous batching.</p>
+  <figure>
+<pre class="mermaid">
+sequenceDiagram
+  participant A as Person A
+  participant B as Person B
+  participant C as Subagent C
+  participant S as Scheduler
+  participant M as Model (3 GPUs)
+  A->>S: request
+  S->>M: step 1: [A]
+  S->>M: step 2: [A]
+  B->>S: request arrives mid-way
+  S->>M: step 3: [A, B]  (B joins, no waiting)
+  C->>S: request
+  S->>M: step 4: [A, B, C]
+  M-->>A: A finished
+  S->>M: step 5: [B, C]  (A leaves, frees its memory)
+  S->>M: step 6: [B, C, ...new ones join as they come]
+</pre>
+    <figcaption>B and C never wait for A to finish. They join at the next step.</figcaption>
+  </figure>
+
+  <h2>The scheduler's rules</h2>
+  <ol>
+    <li><strong>A new request arrives:</strong> its prompt is read in one quick pass, then it joins the active batch at the next step. Everyone already running gets slightly smaller slices of each step.</li>
+    <li><strong>A request finishes:</strong> it leaves at once and its memory goes straight to the next request.</li>
+    <li><strong>Memory is handed out in small blocks:</strong> short chats use a few, long ones use more, so no space is reserved for a worst case that never comes.</li>
+    <li><strong>Memory is full:</strong> new requests wait in line for a moment instead of crashing anything, and start as soon as someone finishes. The gateway can show "queued".</li>
+    <li><strong>Fairness:</strong> a cap per person, so twenty subagents from one job cannot crowd out a single chat.</li>
+  </ol>
+
+  <h2>One model or many specialists?</h2>
+  <p>A second option is to keep one shared base model and swap in small task-specific add-ons (LoRA adapters), picked per request by a tiny router model. It trades some simplicity for specialists trained on real past tasks.</p>
+  <figure>
+<pre class="mermaid">
+flowchart TB
+  A[Main agent spawns subagents] --> R[Tiny router model: which kind of task?]
+  R --> E1[Search expert]
+  R --> E2[Code edit expert]
+  R --> E3[Review expert]
+  R --> E4[Summarize expert]
+  E1 & E2 & E3 & E4 --> B[One shared base model on the GPUs, batched]
+  B --> O[Results back to the main agent]
+</pre>
+    <figcaption>Task-level experts: one base model in memory, many small specialists sharing it.</figcaption>
+  </figure>
+
+  <h2>Where the speed goes as people join</h2>
+  <p>Every step the GPUs write one new token (roughly a word) for every active conversation. A step gets a little longer with each extra person, so each person's speed drops slowly while the total the server produces keeps climbing. Once the conversation memory is full, extra requests wait in line instead of slowing everyone further.</p>
+
+  <div class="sim">
+    <label class="sim-ctl" for="users">People using it at once: <strong id="usersOut">20</strong></label>
+    <input id="users" type="range" min="1" max="40" value="20" aria-describedby="usersOut">
+    <div class="tiles">
+      <div class="tile"><div class="k">Each person gets</div><div class="v"><span id="tPer">20</span><small> tokens/s</small></div><div class="d" id="tPerNote"></div></div>
+      <div class="tile"><div class="k">Everyone combined</div><div class="v"><span id="tAll">410</span><small> tokens/s</small></div><div class="d">what the server writes in total</div></div>
+      <div class="tile"><div class="k">Waiting in line</div><div class="v"><span id="tWait">0</span></div><div class="d" id="tWaitNote">memory has room</div></div>
+    </div>
+
+    <figure class="chart">
+      <div class="ctitle">Speed each person gets <span class="unit">(tokens per second)</span></div>
+      <svg id="cPer" role="img" aria-label="Line chart: tokens per second for each person as the number of people grows"></svg>
+      <div class="tip" id="tipPer" hidden></div>
+    </figure>
+    <figure class="chart">
+      <div class="ctitle">Everyone combined <span class="unit">(tokens per second, whole server)</span></div>
+      <svg id="cAll" role="img" aria-label="Line chart: total tokens per second for the whole server as the number of people grows"></svg>
+      <div class="tip" id="tipAll" hidden></div>
+    </figure>
+
+    <details class="tbl"><summary>Show as a table</summary>
+      <table id="simTable"><thead><tr><th>People</th><th>Each person (tokens/s)</th><th>Combined (tokens/s)</th><th>Waiting</th></tr></thead><tbody></tbody></table>
+    </details>
+  </div>
+  <p class="note"><strong>This is a model, not a measurement yet.</strong> Assumptions: one generation step takes about 17 ms plus about 1.6 ms for each active conversation (typical for a mixture-of-experts model that uses a few billion parameters per token on three RTX 3090s), and the memory pool holds about 24 conversations of around 16k tokens each. Longer conversations mean fewer fit before the line starts. The planned load test will replace these curves with real numbers.</p>
+
+  <footer>Jaron Wilson &middot; design notes, November 2026</footer>
+</main>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "strict",
+                       flowchart: { htmlLabels: true, curve: "basis" } });
+</script>
+<script>
+(function () {
+  // Illustrative model (see note under the charts): step = BASE + PER * active; each active request gets 1 token/step.
+  var BASE = 17, PER = 1.6, CAP = 24, MAXU = 40, READ = 5;
+  function at(n) {
+    var active = Math.min(n, CAP), step = BASE + PER * active, each = 1000 / step;
+    return { n: n, each: each, all: each * active, wait: Math.max(0, n - CAP) };
+  }
+  var data = []; for (var i = 1; i <= MAXU; i++) data.push(at(i));
+  var NS = "http://www.w3.org/2000/svg";
+  function el(t, a, p) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  var charts = [];
+  function draw(svgId, tipId, key, yMax, yStep, refLine, fmtTip) {
+    var svg = document.getElementById(svgId), tip = document.getElementById(tipId);
+    var W = svg.clientWidth || 700, H = 270, L = 44, R = 14, T = 10, B = 44;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.innerHTML = "";
+    var x = function (n) { return L + (n - 1) / (MAXU - 1) * (W - L - R); };
+    var y = function (v) { return T + (1 - v / yMax) * (H - T - B); };
+    var ink = css("--muted"), grid = css("--grid"), mark = css("--mark");
+    // memory-full zone
+    el("rect", { x: x(CAP), y: T, width: x(MAXU) - x(CAP), height: H - T - B, fill: css("--zone") }, svg);
+    var zl = el("text", { x: x(CAP) + 6, y: T + 14, fill: ink, "font-size": 12 }, svg); zl.textContent = "Memory full: extra people wait in line";
+    for (var v = 0; v <= yMax; v += yStep) {
+      el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: grid, "stroke-width": 1 }, svg);
+      var t = el("text", { x: L - 8, y: y(v) + 4, fill: ink, "font-size": 12, "text-anchor": "end" }, svg); t.textContent = v.toLocaleString();
+    }
+    [1, 10, 20, 30, 40].forEach(function (n) { var t = el("text", { x: x(n), y: H - 26, fill: ink, "font-size": 12, "text-anchor": "middle" }, svg); t.textContent = n; });
+    var xl = el("text", { x: (L + W - R) / 2, y: H, fill: ink, "font-size": 12, "text-anchor": "middle" }, svg); xl.textContent = "People using it at once";
+    if (refLine) {
+      el("line", { x1: L, x2: W - R, y1: y(refLine), y2: y(refLine), stroke: ink, "stroke-width": 1 }, svg);
+      var rl = el("text", { x: L + 6, y: y(refLine) - 6, fill: ink, "font-size": 12 }, svg); rl.textContent = "Reading speed, about " + refLine + " tokens/s";
+    }
+    var pts = data.map(function (d) { return x(d.n) + "," + y(d[key]); });
+    el("polygon", { points: x(1) + "," + y(0) + " " + pts.join(" ") + " " + x(MAXU) + "," + y(0), fill: mark, "fill-opacity": .1 }, svg);
+    el("polyline", { points: pts.join(" "), fill: "none", stroke: mark, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    var cross = el("line", { y1: T, y2: H - B, stroke: ink, "stroke-width": 1, visibility: "hidden" }, svg);
+    var dot = el("circle", { r: 5, fill: mark, stroke: css("--surface"), "stroke-width": 2 }, svg);
+    var hit = el("rect", { x: L, y: T, width: W - L - R, height: H - T - B, fill: "transparent" }, svg);
+    function nearest(evt) { var r = svg.getBoundingClientRect(), px = (evt.clientX - r.left) * W / r.width; return Math.max(1, Math.min(MAXU, Math.round((px - L) / (W - L - R) * (MAXU - 1) + 1))); }
+    hit.addEventListener("pointermove", function (evt) {
+      var d = data[nearest(evt) - 1]; cross.setAttribute("x1", x(d.n)); cross.setAttribute("x2", x(d.n)); cross.setAttribute("visibility", "visible");
+      tip.hidden = false; tip.innerHTML = fmtTip(d);
+      var r = svg.getBoundingClientRect(), fx = x(d.n) * r.width / W;
+      tip.style.left = Math.min(r.width - tip.offsetWidth, Math.max(0, fx + 12)) + "px"; tip.style.top = (y(d[key]) * r.height / H) + "px";
+    });
+    hit.addEventListener("pointerleave", function () { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+    return { set: function (n) { var d = data[n - 1]; dot.setAttribute("cx", x(d.n)); dot.setAttribute("cy", y(d[key])); } };
+  }
+  function f0(v) { return Math.round(v).toLocaleString(); }
+  function wait(d) { return d.wait ? d.wait + " waiting" : "no one waiting"; }
+  function build() {
+    charts = [
+      draw("cPer", "tipPer", "each", 60, 10, READ, function (d) { return "<strong>" + d.n + " people</strong><br>" + f0(d.each) + " tokens/s each<br>" + wait(d); }),
+      draw("cAll", "tipAll", "all", 500, 100, 0, function (d) { return "<strong>" + d.n + " people</strong><br>" + f0(d.all) + " tokens/s combined<br>" + wait(d); })
+    ];
+    update();
+  }
+  var slider = document.getElementById("users");
+  function update() {
+    var n = +slider.value, d = data[n - 1];
+    document.getElementById("usersOut").textContent = n;
+    document.getElementById("tPer").textContent = f0(d.each);
+    document.getElementById("tPerNote").textContent = d.each >= 4 * READ ? "about " + Math.round(d.each / READ) + "x reading speed" : "still faster than reading";
+    document.getElementById("tAll").textContent = f0(d.all);
+    document.getElementById("tWait").textContent = d.wait;
+    document.getElementById("tWaitNote").textContent = d.wait ? "they start as soon as someone finishes" : "memory has room";
+    charts.forEach(function (c) { c.set(n); });
+  }
+  slider.addEventListener("input", update);
+  var tb = document.querySelector("#simTable tbody");
+  data.forEach(function (d) { if (d.n === 1 || d.n % 4 === 0) { var r = tb.insertRow(); [d.n, f0(d.each), f0(d.all), d.wait].forEach(function (v) { r.insertCell().textContent = v; }); } });
+  build();
+  window.addEventListener("resize", build);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", build);
+})();
+</script>
+<script src="/nav.js" defer></script>
+</body>
+</html>
